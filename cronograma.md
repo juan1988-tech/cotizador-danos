@@ -32,7 +32,7 @@
 - [x] Instalar dependencias frontend  
 - [x] Configurar Tailwind  
 - [x] Configurar Vite  
-- Configurar scripts frontend  
+- [x] Configurar scripts frontend  
 - Configurar Docker Compose  
 - Crear Dockerfile backend  
 - Crear Dockerfile frontend  

@@ -3,11 +3,15 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 
+const isTest = process.env.VITEST !== undefined;
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    babel({ presets: [reactCompilerPreset()] }),
+    // Disable React Compiler in test mode to avoid stale-closure memoization
+    // that causes controlled form state to be invisible to event handlers.
+    ...(isTest ? [] : [babel({ presets: [reactCompilerPreset()] })]),
     tailwindcss(),
   ],
   server: {

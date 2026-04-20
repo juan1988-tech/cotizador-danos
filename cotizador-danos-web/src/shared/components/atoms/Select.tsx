@@ -21,7 +21,7 @@ export const Select = ({ label, options, error, className = '', ...props }: Sele
 				} ${className}`}
 				{...props}
 			>
-				<option value="" disabled hidden>Selecciona una opción</option>
+				<option value="" disabled>Selecciona una opción</option>
 				{options.map(opt => (
 					<option key={opt.value} value={opt.value}>{opt.label}</option>
 				))}

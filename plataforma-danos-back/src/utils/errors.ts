@@ -1,116 +1,99 @@
 export class AppError extends Error {
-  readonly statusCode: number;
-  readonly errorCode: string;
-  readonly details?: Record<string, unknown>;
+  statusCode: number;
+  errorCode: string;
+  details?: unknown;
 
-  constructor(
-    statusCode: number,
-    errorCode: string,
-    message: string,
-    details?: Record<string, unknown>
-  ) {
+  constructor(message: string, statusCode: number, errorCode: string, details?: unknown) {
     super(message);
-    this.name = errorCode;
     this.statusCode = statusCode;
     this.errorCode = errorCode;
     this.details = details;
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
 export class QuoteNotFoundError extends AppError {
   constructor(folio: string) {
-    super(404, 'QuoteNotFound', `La cotización con folio '${folio}' no existe.`);
+    super(`Quote '${folio}' not found`, 404, 'QuoteNotFound');
   }
 }
 
 export class LocationNotFoundError extends AppError {
-  constructor(index: number) {
-    super(
-      404,
-      'LocationNotFound',
-      `La ubicación con índice ${index} no existe en el layout configurado.`
-    );
+  constructor(indice: number) {
+    super(`Location at index ${indice} not found`, 404, 'LocationNotFound');
   }
 }
 
 export class VersionConflictError extends AppError {
   constructor(expectedVersion: number, currentVersion: number) {
     super(
+      `Version conflict: expected ${expectedVersion}, current is ${currentVersion}`,
       409,
       'VersionConflict',
-      'La versión enviada no coincide con la versión actual del registro.',
-      { expectedVersion, currentVersion }
+      { expectedVersion, currentVersion },
     );
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super(400, 'ValidationError', message, details);
+  constructor(message: string, details?: unknown) {
+    super(message, 400, 'ValidationError', details);
   }
 }
 
 export class MissingRequiredFieldError extends AppError {
   constructor(field: string) {
-    super(400, 'MissingRequiredField', `El campo '${field}' es obligatorio.`, { field });
+    super(`Missing required field: ${field}`, 400, 'MissingRequiredField', { field });
   }
 }
 
 export class ExternalValidationError extends AppError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super(422, 'ExternalValidationError', message, details);
+  constructor(message: string, details?: unknown) {
+    super(message, 422, 'ExternalValidationError', details);
   }
 }
 
 export class NoValidLocationsError extends AppError {
-  constructor(incompleteIndices: number[]) {
+  constructor(ubicacionesIncompletas: number[]) {
     super(
+      'No valid locations available for calculation',
       422,
       'NoValidLocationsForCalculation',
-      'No existen ubicaciones válidas para calcular. Todas las ubicaciones están en estado INCOMPLETA.',
-      { ubicacionesIncompletas: incompleteIndices }
+      { ubicacionesIncompletas },
     );
   }
 }
 
 export class NoCoverageSelectedError extends AppError {
   constructor() {
-    super(
-      422,
-      'NoCoverageSelected',
-      'Se debe seleccionar al menos una cobertura antes de calcular.'
-    );
+    super('No coverage has been selected', 422, 'NoCoverageSelected');
   }
 }
 
 export class ObligatoryCoberturaCantBeDeselectedError extends AppError {
   constructor(codigoCobertura: string) {
     super(
+      `Obligatory coverage '${codigoCobertura}' cannot be deselected`,
       422,
       'ObligatoryCoberturaCantBeDeselected',
-      `La cobertura '${codigoCobertura}' es obligatoria y no puede ser deseleccionada.`,
-      { codigoCobertura }
-    );
-  }
-}
-
-export class InvalidQuoteStateTransitionError extends AppError {
-  constructor(currentState: string, attemptedOperation: string) {
-    super(
-      422,
-      'InvalidQuoteStateTransition',
-      `La operación '${attemptedOperation}' no es válida para el estado actual '${currentState}'.`,
-      { currentState, attemptedOperation }
+      { codigoCobertura },
     );
   }
 }
 
 export class CatalogServiceUnavailableError extends AppError {
   constructor() {
+    super('Catalog service is unavailable', 503, 'CatalogServiceUnavailable');
+  }
+}
+
+export class InvalidQuoteStateTransitionError extends AppError {
+  constructor(currentState: string, attemptedOperation: string) {
     super(
-      503,
-      'CatalogServiceUnavailable',
-      'El servicio de catálogos no está disponible temporalmente.'
+      `Cannot perform '${attemptedOperation}' from state '${currentState}'`,
+      422,
+      'InvalidQuoteStateTransition',
+      { currentState, attemptedOperation },
     );
   }
 }

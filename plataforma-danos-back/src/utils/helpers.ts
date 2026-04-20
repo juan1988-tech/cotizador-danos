@@ -1,35 +1,53 @@
-import { DatosAsegurado, EstadoCotizacion, ESTADO_ORDER } from '../models/Quote';
-
-export function isValidRFC(rfc: string): boolean {
-  return /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/i.test(rfc);
+// ─── RFC ─────────────────────────────────────────────────────────────────────
+export function isValidRFC(value: string): boolean {
+  return /^[A-Z]{3,4}\d{6}[A-Z0-9]{3}$/i.test(value);
 }
 
-export function isValidISODate(dateStr: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !isNaN(Date.parse(dateStr));
+// ─── ISO date (YYYY-MM-DD only) ───────────────────────────────────────────────
+export function isValidISODate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value);
+  return !isNaN(date.getTime());
 }
 
+// ─── Past date check ──────────────────────────────────────────────────────────
 export function isPastDate(dateStr: string): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new Date(dateStr) < today;
+  const todayStr = new Date().toISOString().split('T')[0];
+  return dateStr < todayStr;
 }
 
-export function isGeneralDataComplete(data: Partial<DatosAsegurado>): boolean {
-  return (
-    !!data.nombreAsegurado &&
-    !!data.rfcAsegurado &&
-    !!data.agenteId &&
-    !!data.suscriptorId &&
-    !!data.tipoNegocio &&
-    !!data.giroId &&
-    !!data.vigenciaInicio &&
-    !!data.vigenciaFin
-  );
+// ─── General data completeness ────────────────────────────────────────────────
+const REQUIRED_GENERAL_FIELDS = [
+  'nombreAsegurado',
+  'rfcAsegurado',
+  'agenteId',
+  'suscriptorId',
+  'tipoNegocio',
+  'giroId',
+  'vigenciaInicio',
+  'vigenciaFin',
+] as const;
+
+export function isGeneralDataComplete(data: Record<string, unknown>): boolean {
+  return REQUIRED_GENERAL_FIELDS.every((field) => data[field] != null && data[field] !== '');
 }
 
-export function advanceEstado(
-  current: EstadoCotizacion,
-  candidate: EstadoCotizacion
-): EstadoCotizacion {
-  return ESTADO_ORDER[current] >= ESTADO_ORDER[candidate] ? current : candidate;
+// ─── Quote state progression ──────────────────────────────────────────────────
+type QuoteStateKey =
+  | 'EN_EDICION'
+  | 'DATOS_GENERALES_COMPLETOS'
+  | 'UBICACIONES_CONFIGURADAS'
+  | 'COBERTURAS_SELECCIONADAS'
+  | 'CALCULADA';
+
+const STATE_ORDER: Record<QuoteStateKey, number> = {
+  EN_EDICION: 0,
+  DATOS_GENERALES_COMPLETOS: 1,
+  UBICACIONES_CONFIGURADAS: 2,
+  COBERTURAS_SELECCIONADAS: 3,
+  CALCULADA: 4,
+};
+
+export function advanceEstado(current: QuoteStateKey, candidate: QuoteStateKey): QuoteStateKey {
+  return STATE_ORDER[current] >= STATE_ORDER[candidate] ? current : candidate;
 }

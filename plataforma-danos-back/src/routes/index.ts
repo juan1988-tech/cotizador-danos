@@ -5,8 +5,13 @@ import catalogRoutes from './catalogRoutes';
 
 const router = Router();
 
+// Quote-level routes: create, read, general-data, coverage-options, calculate
 router.use('/quotes', quoteRoutes);
-router.use('/quotes', locationRoutes);
+
+// Location-specific routes nested under a quote folio
+router.use('/quotes/:folio', locationRoutes);
+
+// Catalog proxy routes: agents, subscribers, giros
 router.use('/catalogs', catalogRoutes);
 
 export default router;

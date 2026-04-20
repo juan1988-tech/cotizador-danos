@@ -1,29 +1,55 @@
 import { Router } from 'express';
 import {
-  postLayout,
   getLocations,
-  putLocations,
   patchLocation,
+  postLayout,
+  putLocations,
 } from '../controllers/LocationController';
-import { requireFields, validateLayout } from '../middlewares/validateRequest';
+import {
+  requireFields,
+  validateFolioParam,
+  validateIndexParam,
+  validateVersionBody,
+  validateLayout,
+  validatePutLocations,
+  validatePatchLocation,
+} from '../middlewares/validateRequest';
 
+// mergeParams allows `:folio` from the parent router to be visible here
 const router = Router({ mergeParams: true });
 
-// POST   /api/v1/quotes/:folio/layout
+// Validate folio format for all routes in this sub-router
+router.use(validateFolioParam);
+
+// POST /quotes/:folio/layout
 router.post(
   '/layout',
-  requireFields('version', 'numeroUbicaciones', 'tipoLayout'),
+  requireFields('version', 'tipoLayout', 'numeroUbicaciones'),
+  validateVersionBody,
   validateLayout,
-  postLayout
+  postLayout,
 );
 
-// GET    /api/v1/quotes/:folio/locations
+// GET /quotes/:folio/locations
 router.get('/locations', getLocations);
 
-// PUT    /api/v1/quotes/:folio/locations
-router.put('/locations', requireFields('version', 'ubicaciones'), putLocations);
+// PUT /quotes/:folio/locations
+router.put(
+  '/locations',
+  requireFields('version', 'ubicaciones'),
+  validateVersionBody,
+  validatePutLocations,
+  putLocations,
+);
 
-// PATCH  /api/v1/quotes/:folio/locations/:index
-router.patch('/locations/:index', requireFields('version'), patchLocation);
+// PATCH /quotes/:folio/locations/:index
+router.patch(
+  '/locations/:index',
+  validateIndexParam,
+  requireFields('version'),
+  validateVersionBody,
+  validatePatchLocation,
+  patchLocation,
+);
 
 export default router;

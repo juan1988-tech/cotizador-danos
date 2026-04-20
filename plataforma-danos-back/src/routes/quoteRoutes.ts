@@ -1,41 +1,66 @@
 import { Router } from 'express';
 import {
-  createQuote,
+  postQuote,
   getQuote,
   patchGeneralData,
   getCoverageOptions,
   putCoverageOptions,
-  calculatePremium,
+  postCalculate,
 } from '../controllers/QuoteController';
-import { requireFields, validateGeneralData } from '../middlewares/validateRequest';
+import {
+  requireFields,
+  validateFolioParam,
+  validateVersionBody,
+  validateGeneralData,
+  validatePutCoverageOptions,
+} from '../middlewares/validateRequest';
 
 const router = Router();
 
-// POST   /api/v1/quotes
-router.post('/', createQuote);
+// POST /quotes — initiate a new quote (no body required)
+router.post('/', postQuote);
 
-// GET    /api/v1/quotes/:folio
-router.get('/:folio', getQuote);
+// GET /quotes/:folio — read full quote state
+router.get(
+  '/:folio',
+  validateFolioParam,
+  getQuote,
+);
 
-// PATCH  /api/v1/quotes/:folio/general-data
+// PATCH /quotes/:folio/general-data — partial update of insured data
 router.patch(
   '/:folio/general-data',
+  validateFolioParam,
   requireFields('version'),
+  validateVersionBody,
   validateGeneralData,
-  patchGeneralData
+  patchGeneralData,
 );
 
-// GET    /api/v1/quotes/:folio/coverage-options
-router.get('/:folio/coverage-options', getCoverageOptions);
+// GET /quotes/:folio/coverage-options — list available coverages
+router.get(
+  '/:folio/coverage-options',
+  validateFolioParam,
+  getCoverageOptions,
+);
 
-// PUT    /api/v1/quotes/:folio/coverage-options
+// PUT /quotes/:folio/coverage-options — persist selected coverages
 router.put(
   '/:folio/coverage-options',
+  validateFolioParam,
   requireFields('version', 'opcionesCobertura'),
-  putCoverageOptions
+  validateVersionBody,
+  validatePutCoverageOptions,
+  putCoverageOptions,
 );
 
-// POST   /api/v1/quotes/:folio/calculate
-router.post('/:folio/calculate', requireFields('version'), calculatePremium);
+// POST /quotes/:folio/calculate — trigger premium calculation
+router.post(
+  '/:folio/calculate',
+  validateFolioParam,
+  requireFields('version'),
+  validateVersionBody,
+  postCalculate,
+);
 
 export default router;

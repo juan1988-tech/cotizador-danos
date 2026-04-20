@@ -1,22 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors';
 
-export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
+/**
+ * Global error handler — converts AppError subclasses to structured JSON
+ * responses and catches unexpected errors without leaking internal details
+ * (LIN-DEV-003: error messages must not reveal stack traces or internal paths).
+ */
+export function errorHandler(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+): void {
   if (err instanceof AppError) {
-    const body: Record<string, unknown> = {
-      error: err.errorCode,
+    res.status(err.statusCode).json({
+      error:   err.errorCode,
       message: err.message,
-    };
-    if (err.details !== undefined) {
-      body.details = err.details;
-    }
-    res.status(err.statusCode).json(body);
+      ...(err.details !== undefined && { details: err.details }),
+    });
     return;
   }
 
-  // Unexpected errors — never expose internals
+  // Unexpected error — log internally but never expose to client
+  console.error('[errorHandler] Unexpected error:', err);
   res.status(500).json({
-    error: 'InternalServerError',
-    message: 'Ha ocurrido un error inesperado. Intente nuevamente.',
+    error:   'InternalServerError',
+    message: 'An unexpected error occurred.',
   });
 }

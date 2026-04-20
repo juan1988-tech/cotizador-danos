@@ -1,158 +1,174 @@
 import { Request, Response, NextFunction } from 'express';
 import { pool } from '../config/database';
-import { EstadoCotizacion, ConfiguracionLayout } from '../models/Quote';
-import { UbicacionResumen, Garantia, LocationInput, computeValidation } from '../models/Location';
-import { ExternalCoreService, Giro } from '../services/ExternalCoreService';
+import { ExternalCoreService } from '../services/ExternalCoreService';
+import { GarantiaResumen, UbicacionResumen, computeValidation } from '../models/Location';
 import {
-  QuoteNotFoundError,
   LocationNotFoundError,
-  VersionConflictError,
+  QuoteNotFoundError,
   ValidationError,
+  VersionConflictError,
 } from '../utils/errors';
 import { validateGarantias } from '../middlewares/validateRequest';
-import { advanceEstado } from '../utils/helpers';
 
-const coreService = new ExternalCoreService();
+// ── Internal row shapes ───────────────────────────────────────────────────────
 
-async function findQuoteRow(folio: string): Promise<Record<string, unknown>> {
-  const result = await pool.query(
-    `SELECT numero_folio, estado_cotizacion, configuracion_layout, version
-     FROM quotes WHERE numero_folio = $1`,
-    [folio]
+type QuoteRow = {
+  numero_folio: string;
+  estado_cotizacion: string;
+  configuracion_layout: { tipoLayout: string; numeroUbicaciones: number } | null;
+  version: number;
+  fecha_ultima_actualizacion: Date;
+};
+
+type LocationRow = {
+  indice_ubicacion: number;
+  descripcion: string | null;
+  codigo_postal: string | null;
+  giro_id: string | null;
+  estado_validacion: 'COMPLETA' | 'INCOMPLETA';
+  alertas_bloqueantes: string[];
+  garantias: GarantiaResumen[];
+  version: number;
+};
+
+const LOC_COLS = `
+  indice_ubicacion, descripcion, codigo_postal, giro_id,
+  estado_validacion, alertas_bloqueantes, garantias, version
+`;
+
+// Module-level singleton — ExternalCoreService uses the pool singleton internally
+const externalCore = new ExternalCoreService();
+
+// ── Private helpers ───────────────────────────────────────────────────────────
+
+async function findQuoteRow(folio: string): Promise<QuoteRow | null> {
+  const { rows } = await pool.query(
+    `SELECT numero_folio, estado_cotizacion, configuracion_layout,
+            version, fecha_ultima_actualizacion
+       FROM quotes WHERE numero_folio = $1`,
+    [folio],
   );
-  if (result.rows.length === 0) throw new QuoteNotFoundError(folio);
-  return result.rows[0] as Record<string, unknown>;
+  return rows.length > 0 ? (rows[0] as QuoteRow) : null;
 }
 
-async function findLocationRow(folio: string, index: number): Promise<Record<string, unknown>> {
-  const result = await pool.query(
-    `SELECT id, numero_folio, indice_ubicacion, descripcion, codigo_postal, giro_id,
-            garantias, estado_validacion, alertas_bloqueantes, version
-     FROM locations WHERE numero_folio = $1 AND indice_ubicacion = $2`,
-    [folio, index]
+async function findLocationRow(folio: string, indice: number): Promise<LocationRow | null> {
+  const { rows } = await pool.query(
+    `SELECT ${LOC_COLS} FROM locations
+      WHERE numero_folio = $1 AND indice_ubicacion = $2`,
+    [folio, indice],
   );
-  if (result.rows.length === 0) throw new LocationNotFoundError(index);
-  return result.rows[0] as Record<string, unknown>;
+  return rows.length > 0 ? (rows[0] as LocationRow) : null;
 }
 
-function rowToUbicacionResumen(r: Record<string, unknown>): UbicacionResumen {
+function toUbicacionResumen(row: LocationRow): UbicacionResumen {
   return {
-    indiceUbicacion: r.indice_ubicacion as number,
-    descripcion: r.descripcion as string | null,
-    codigoPostal: r.codigo_postal as string | null,
-    giroId: r.giro_id as string | null,
-    estadoValidacion: r.estado_validacion as 'COMPLETA' | 'INCOMPLETA',
-    alertasBloqueantes: (r.alertas_bloqueantes as string[]) ?? [],
-    garantias: (r.garantias as Garantia[]) ?? [],
-    version: r.version as number,
+    indiceUbicacion:    row.indice_ubicacion,
+    descripcion:        row.descripcion,
+    codigoPostal:       row.codigo_postal,
+    giroId:             row.giro_id,
+    estadoValidacion:   row.estado_validacion,
+    alertasBloqueantes: row.alertas_bloqueantes ?? [],
+    garantias:          row.garantias ?? [],
+    version:            row.version,
   };
 }
 
-function buildResumen(rows: UbicacionResumen[]): {
-  total: number;
-  completas: number;
-  incompletas: number;
-} {
-  const completas = rows.filter(r => r.estadoValidacion === 'COMPLETA').length;
-  return { total: rows.length, completas, incompletas: rows.length - completas };
+function assertGarantias(garantias: GarantiaResumen[], next: NextFunction): boolean {
+  const error = validateGarantias(garantias);
+  if (error) {
+    next(new ValidationError(error, { field: 'garantias' }));
+    return false;
+  }
+  return true;
 }
 
-// ── POST /api/v1/quotes/:folio/layout ─────────────────────────────────────────
+// ── POST /quotes/:folio/layout ────────────────────────────────────────────────
 
 export async function postLayout(
   req: Request<{ folio: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const folio = req.params.folio;
-    const { numeroUbicaciones, tipoLayout, version } = req.body as {
-      numeroUbicaciones: number;
+    const { folio } = req.params;
+    const { tipoLayout, numeroUbicaciones, version } = req.body as {
       tipoLayout: string;
+      numeroUbicaciones: number;
       version: number;
     };
 
-    const quoteRow = await findQuoteRow(folio);
-    if ((quoteRow.version as number) !== version) {
-      throw new VersionConflictError(version, quoteRow.version as number);
+    // 1. Guard: quote exists
+    const quote = await findQuoteRow(folio);
+    if (!quote) { next(new QuoteNotFoundError(folio)); return; }
+
+    // 2. Fail-fast optimistic lock check (pre-transaction)
+    if (quote.version !== version) {
+      next(new VersionConflictError(version, quote.version));
+      return;
     }
 
-    const previousLayout = quoteRow.configuracion_layout as ConfiguracionLayout | null;
-    const previousCount = previousLayout?.numeroUbicaciones ?? 0;
-    const newEstado: EstadoCotizacion = advanceEstado(
-      quoteRow.estado_cotizacion as EstadoCotizacion,
-      'UBICACIONES_CONFIGURADAS'
-    );
+    const currentCount = quote.configuracion_layout?.numeroUbicaciones ?? 0;
+    const newLayoutJson = JSON.stringify({ tipoLayout, numeroUbicaciones });
 
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      if (numeroUbicaciones > previousCount) {
-        // Add new empty locations at the end
-        for (let i = previousCount + 1; i <= numeroUbicaciones; i++) {
+      // 3. Adjust location slots
+      if (numeroUbicaciones > currentCount) {
+        for (let i = currentCount + 1; i <= numeroUbicaciones; i++) {
           await client.query(
-            `INSERT INTO locations
-               (numero_folio, indice_ubicacion, descripcion, codigo_postal, giro_id,
-                garantias, estado_validacion, alertas_bloqueantes, version)
-             VALUES ($1, $2, NULL, NULL, NULL, '[]', 'INCOMPLETA',
-                     $3, 1)
+            `INSERT INTO locations (numero_folio, indice_ubicacion)
+             VALUES ($1, $2)
              ON CONFLICT (numero_folio, indice_ubicacion) DO NOTHING`,
-            [
-              folio,
-              i,
-              JSON.stringify([
-                'C\u00f3digo postal no v\u00e1lido o no encontrado',
-                'El giro seleccionado no tiene tarifa de incendio asociada',
-                'La ubicaci\u00f3n no tiene garant\u00edas tarifables para calcular',
-              ]),
-            ]
+            [folio, i],
           );
         }
-      } else if (numeroUbicaciones < previousCount) {
-        // Remove locations from the end
+      } else if (numeroUbicaciones < currentCount) {
         await client.query(
-          `DELETE FROM locations WHERE numero_folio = $1 AND indice_ubicacion > $2`,
-          [folio, numeroUbicaciones]
+          `DELETE FROM locations
+            WHERE numero_folio = $1 AND indice_ubicacion > $2`,
+          [folio, numeroUbicaciones],
         );
       }
 
-      const newLayout: ConfiguracionLayout = {
-        numeroUbicaciones,
-        tipoLayout: tipoLayout as 'UNIFORME' | 'PERSONALIZADO',
-      };
-
+      // 4. Update quote with optimistic locking (version in WHERE)
       const updateResult = await client.query(
         `UPDATE quotes
-         SET configuracion_layout = $1,
-             estado_cotizacion = $2,
-             version = version + 1,
-             fecha_ultima_actualizacion = NOW()
-         WHERE numero_folio = $3 AND version = $4
-         RETURNING version, fecha_ultima_actualizacion`,
-        [JSON.stringify(newLayout), newEstado, folio, version]
+            SET configuracion_layout = $3, version = version + 1
+          WHERE numero_folio = $1 AND version = $2
+          RETURNING version, fecha_ultima_actualizacion`,
+        [folio, version, newLayoutJson],
       );
 
+      // Race condition: another writer changed the version between our pre-check and here
       if (updateResult.rows.length === 0) {
         await client.query('ROLLBACK');
-        throw new VersionConflictError(version, (quoteRow.version as number) + 1);
+        throw new VersionConflictError(version, quote.version);
       }
 
       await client.query('COMMIT');
 
-      const row = updateResult.rows[0] as Record<string, unknown>;
+      const updated = updateResult.rows[0] as {
+        version: number;
+        fecha_ultima_actualizacion: Date;
+      };
+      const ubicacionesInicializadas = numeroUbicaciones > currentCount
+        ? numeroUbicaciones - currentCount
+        : 0;
+
       res.status(200).json({
         data: {
           numeroFolio: folio,
-          configuracionLayout: newLayout,
-          ubicacionesInicializadas: Math.max(0, numeroUbicaciones - previousCount),
-          version: row.version,
-          fechaUltimaActualizacion: (row.fecha_ultima_actualizacion as Date).toISOString(),
+          configuracionLayout: { tipoLayout, numeroUbicaciones },
+          ubicacionesInicializadas,
+          version: updated.version,
+          fechaUltimaActualizacion: updated.fecha_ultima_actualizacion,
         },
       });
     } catch (err) {
       await client.query('ROLLBACK');
-      throw err;
+      next(err);
     } finally {
       client.release();
     }
@@ -161,30 +177,37 @@ export async function postLayout(
   }
 }
 
+// ── GET /quotes/:folio/locations ──────────────────────────────────────────────
+
 export async function getLocations(
   req: Request<{ folio: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const { folio } = req.params as { folio: string };
-    await findQuoteRow(folio); // ensures quote exists
+    const { folio } = req.params;
 
-    const result = await pool.query(
-      `SELECT indice_ubicacion, descripcion, codigo_postal, giro_id,
-              estado_validacion, alertas_bloqueantes, garantias, version
-       FROM locations WHERE numero_folio = $1 ORDER BY indice_ubicacion`,
-      [folio]
+    const quote = await findQuoteRow(folio);
+    if (!quote) { next(new QuoteNotFoundError(folio)); return; }
+
+    const { rows } = await pool.query(
+      `SELECT ${LOC_COLS} FROM locations
+        WHERE numero_folio = $1
+        ORDER BY indice_ubicacion`,
+      [folio],
     );
 
-    const ubicaciones = result.rows.map((r: Record<string, unknown>) =>
-      rowToUbicacionResumen(r as Record<string, unknown>)
-    );
+    const ubicaciones = (rows as LocationRow[]).map(toUbicacionResumen);
+    const completas = ubicaciones.filter((u) => u.estadoValidacion === 'COMPLETA').length;
 
     res.status(200).json({
       data: {
         ubicaciones,
-        resumen: buildResumen(ubicaciones),
+        resumen: {
+          total:       ubicaciones.length,
+          completas,
+          incompletas: ubicaciones.length - completas,
+        },
       },
     });
   } catch (err) {
@@ -192,144 +215,156 @@ export async function getLocations(
   }
 }
 
-// ── PUT /api/v1/quotes/:folio/locations ───────────────────────────────────────
+// ── PUT /quotes/:folio/locations ──────────────────────────────────────────────
 
 export async function putLocations(
   req: Request<{ folio: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const folio = req.params.folio;
+    const { folio } = req.params;
     const { ubicaciones: inputs, version } = req.body as {
-      ubicaciones: LocationInput[];
+      ubicaciones: Array<{
+        indiceUbicacion: number;
+        descripcion?: string;
+        codigoPostal?: string;
+        giroId?: string;
+        garantias?: GarantiaResumen[];
+        version: number;
+      }>;
       version: number;
     };
 
-    const quoteRow = await findQuoteRow(folio);
-    if ((quoteRow.version as number) !== version) {
-      throw new VersionConflictError(version, quoteRow.version as number);
+    // 1. Quote existence + version (pre-transaction fail-fast)
+    const quote = await findQuoteRow(folio);
+    if (!quote) { next(new QuoteNotFoundError(folio)); return; }
+
+    if (quote.version !== version) {
+      next(new VersionConflictError(version, quote.version));
+      return;
     }
 
-    // Pre-validate all inputs before touching the DB
-    const giroInfoMap = new Map<string, Giro | null>();
+    // 2. Pre-validate each location exists and its garantias
     for (const input of inputs) {
-      const locationRow = await findLocationRow(folio, input.indiceUbicacion);
-      if ((locationRow.version as number) !== input.version) {
-        throw new VersionConflictError(input.version, locationRow.version as number);
-      }
-      if (input.garantias) {
-        const err = validateGarantias(input.garantias);
-        if (err) throw new ValidationError(err);
-      }
+      const existing = await findLocationRow(folio, input.indiceUbicacion);
+      if (!existing) { next(new LocationNotFoundError(input.indiceUbicacion)); return; }
+      if (input.garantias && !assertGarantias(input.garantias, next)) return;
+    }
+
+    // 3. Catalog validation + collect giroInfo for use inside the transaction
+    const giroInfoCache = new Map<string, { id: string; nombre: string; claveIncendio: string | null }>();
+
+    for (const input of inputs) {
+      // validatePostalCode throws ExternalValidationError when CP is not found;
+      // any thrown error bubbles up to the outer try/catch → next(err)
       if (input.codigoPostal) {
-        await coreService.validatePostalCode(input.codigoPostal);
+        await externalCore.validatePostalCode(input.codigoPostal);
       }
       if (input.giroId) {
-        const giroInfo = await coreService.getGiroInfo(input.giroId);
+        const giroInfo = await externalCore.getGiroInfo(input.giroId);
         if (!giroInfo) {
-          throw new ValidationError(`El giro '${input.giroId}' no existe.`, { field: 'giroId' });
+          next(new ValidationError(
+            `Giro no encontrado: ${input.giroId}`,
+            { field: 'giroId', value: input.giroId },
+          ));
+          return;
         }
-        giroInfoMap.set(input.giroId, giroInfo);
+        giroInfoCache.set(input.giroId, giroInfo);
       }
     }
 
+    // 4. Transactional update of all locations
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
       for (const input of inputs) {
-        const existing = await findLocationRow(folio, input.indiceUbicacion);
-        const merged = {
-          descripcion:
-            input.descripcion !== undefined
-              ? input.descripcion
-              : (existing.descripcion as string | null),
-          codigoPostal:
-            input.codigoPostal !== undefined
-              ? input.codigoPostal
-              : (existing.codigo_postal as string | null),
-          giroId: input.giroId !== undefined ? input.giroId : (existing.giro_id as string | null),
-          garantias:
-            input.garantias !== undefined
-              ? input.garantias
-              : ((existing.garantias as Garantia[]) ?? []),
-        };
-        const giro = merged.giroId ? giroInfoMap.get(merged.giroId) : undefined;
-        const hasClaveIncendio =
-          giro !== undefined ? giro?.claveIncendio != null : undefined;
-        const validation = computeValidation({ ...merged, hasClaveIncendio });
+        // Re-read inside the transaction to merge current state
+        const locResult = await client.query(
+          `SELECT ${LOC_COLS} FROM locations
+            WHERE numero_folio = $1 AND indice_ubicacion = $2`,
+          [folio, input.indiceUbicacion],
+        );
+        if (locResult.rows.length === 0) {
+          throw new LocationNotFoundError(input.indiceUbicacion);
+        }
+        const existing = locResult.rows[0] as LocationRow;
+
+        // Merge patch with current values before computing validation
+        const effectiveCp       = input.codigoPostal ?? existing.codigo_postal;
+        const effectiveGiroId   = input.giroId       ?? existing.giro_id;
+        const effectiveGarantias = input.garantias    ?? existing.garantias;
+        const giroInfo = input.giroId ? giroInfoCache.get(input.giroId) : undefined;
+
+        const validation = computeValidation({
+          codigoPostal:     effectiveCp,
+          giroId:           effectiveGiroId,
+          garantias:        effectiveGarantias,
+          hasClaveIncendio: giroInfo ? !!giroInfo.claveIncendio : undefined,
+        });
+
+        // Build dynamic SET clause (only update provided fields)
+        const setClauses: string[] = ['version = version + 1'];
+        const params: unknown[]    = [folio, input.indiceUbicacion];
+        let idx = 3;
+
+        if (input.descripcion  !== undefined) { setClauses.push(`descripcion  = $${idx++}`); params.push(input.descripcion); }
+        if (input.codigoPostal !== undefined) { setClauses.push(`codigo_postal = $${idx++}`); params.push(input.codigoPostal); }
+        if (input.giroId       !== undefined) { setClauses.push(`giro_id       = $${idx++}`); params.push(input.giroId); }
+        if (input.garantias    !== undefined) { setClauses.push(`garantias     = $${idx++}`); params.push(JSON.stringify(input.garantias)); }
+
+        setClauses.push(`estado_validacion   = $${idx++}`); params.push(validation.estadoValidacion);
+        setClauses.push(`alertas_bloqueantes = $${idx++}`); params.push(JSON.stringify(validation.alertasBloqueantes));
 
         await client.query(
-          `UPDATE locations
-           SET descripcion = $1, codigo_postal = $2, giro_id = $3,
-               garantias = $4, estado_validacion = $5, alertas_bloqueantes = $6,
-               version = version + 1, fecha_actualizacion = NOW()
-           WHERE numero_folio = $7 AND indice_ubicacion = $8`,
-          [
-            merged.descripcion,
-            merged.codigoPostal,
-            merged.giroId,
-            JSON.stringify(merged.garantias),
-            validation.estadoValidacion,
-            JSON.stringify(validation.alertasBloqueantes),
-            folio,
-            input.indiceUbicacion,
-          ]
+          `UPDATE locations SET ${setClauses.join(', ')}
+            WHERE numero_folio = $1 AND indice_ubicacion = $2`,
+          params,
         );
       }
 
-      // Determine new quote state and whether to invalidate a previous calculation
-      const allLocations = await client.query(
+      // Check whether all locations are now complete
+      const stateResult = await client.query(
         `SELECT estado_validacion FROM locations WHERE numero_folio = $1`,
-        [folio]
+        [folio],
       );
-      const anyComplete = allLocations.rows.some(
-        (r: Record<string, unknown>) => r.estado_validacion === 'COMPLETA'
-      );
-      const currentEstado = quoteRow.estado_cotizacion as EstadoCotizacion;
-      const wasCalculada = currentEstado === 'CALCULADA';
-      const newEstado: EstadoCotizacion = wasCalculada
-        ? 'COBERTURAS_SELECCIONADAS'
-        : anyComplete
-        ? advanceEstado(currentEstado, 'UBICACIONES_CONFIGURADAS')
-        : currentEstado;
+      const allComplete = (stateResult.rows as Array<{ estado_validacion: string }>)
+        .every((r) => r.estado_validacion === 'COMPLETA');
 
+      // Bump quote version (and optionally advance estado if all complete)
+      const extraSet = allComplete ? `, estado_cotizacion = 'UBICACIONES_CONFIGURADAS'` : '';
       await client.query(
-        `UPDATE quotes
-         SET estado_cotizacion = $1,
-             primas_por_ubicacion = CASE WHEN $2::boolean THEN NULL ELSE primas_por_ubicacion END,
-             version = version + 1,
-             fecha_ultima_actualizacion = NOW()
-         WHERE numero_folio = $3 AND version = $4`,
-        [newEstado, wasCalculada, folio, version]
+        `UPDATE quotes SET version = version + 1${extraSet} WHERE numero_folio = $1`,
+        [folio],
       );
 
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
-      throw err;
+      next(err);
+      return;
     } finally {
       client.release();
     }
 
-    const afterResult = await pool.query(
-      `SELECT indice_ubicacion, descripcion, codigo_postal, giro_id,
-              estado_validacion, alertas_bloqueantes, garantias, version
-       FROM locations WHERE numero_folio = $1 ORDER BY indice_ubicacion`,
-      [folio]
+    // 5. Read updated state for the response
+    const { rows: updatedRows } = await pool.query(
+      `SELECT ${LOC_COLS} FROM locations
+        WHERE numero_folio = $1 ORDER BY indice_ubicacion`,
+      [folio],
     );
-    const updatedUbicaciones = afterResult.rows.map((r: Record<string, unknown>) =>
-      rowToUbicacionResumen(r as Record<string, unknown>)
-    );
-    const quoteAfter = await findQuoteRow(folio);
+    const updatedQuote = await findQuoteRow(folio);
+
+    const ubicaciones = (updatedRows as LocationRow[]).map(toUbicacionResumen);
+    const completas = ubicaciones.filter((u) => u.estadoValidacion === 'COMPLETA').length;
 
     res.status(200).json({
       data: {
-        ubicaciones: updatedUbicaciones,
-        resumen: buildResumen(updatedUbicaciones),
-        version: quoteAfter.version,
-        fechaUltimaActualizacion: (quoteAfter.fecha_ultima_actualizacion as Date).toISOString(),
+        ubicaciones,
+        resumen: { total: ubicaciones.length, completas, incompletas: ubicaciones.length - completas },
+        version:                 updatedQuote?.version ?? version,
+        fechaUltimaActualizacion: updatedQuote?.fecha_ultima_actualizacion,
       },
     });
   } catch (err) {
@@ -337,98 +372,105 @@ export async function putLocations(
   }
 }
 
-// ── PATCH /api/v1/quotes/:folio/locations/:index ──────────────────────────────
+// ── PATCH /quotes/:folio/locations/:index ─────────────────────────────────────
 
 export async function patchLocation(
   req: Request<{ folio: string; index: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const folio = req.params.folio;
-    const index = parseInt(req.params.index, 10);
-    const body = req.body as Partial<LocationInput> & { version: number };
-
-    const quoteRow = await findQuoteRow(folio);
-    const locationRow = await findLocationRow(folio, index);
-
-    if ((locationRow.version as number) !== body.version) {
-      throw new VersionConflictError(body.version, locationRow.version as number);
-    }
-
-    if (body.garantias) {
-      const err = validateGarantias(body.garantias);
-      if (err) throw new ValidationError(err);
-    }
-    if (body.codigoPostal) {
-      await coreService.validatePostalCode(body.codigoPostal);
-    }
-    let hasClaveIncendio: boolean | undefined;
-    if (body.giroId) {
-      const giroInfo = await coreService.getGiroInfo(body.giroId);
-      if (!giroInfo) {
-        throw new ValidationError(`El giro '${body.giroId}' no existe.`, { field: 'giroId' });
-      }
-      hasClaveIncendio = giroInfo.claveIncendio != null;
-    }
-
-    const merged = {
-      descripcion:
-        body.descripcion !== undefined
-          ? body.descripcion
-          : (locationRow.descripcion as string | null),
-      codigoPostal:
-        body.codigoPostal !== undefined
-          ? body.codigoPostal
-          : (locationRow.codigo_postal as string | null),
-      giroId: body.giroId !== undefined ? body.giroId : (locationRow.giro_id as string | null),
-      garantias:
-        body.garantias !== undefined
-          ? body.garantias
-          : ((locationRow.garantias as Garantia[]) ?? []),
+    const { folio, index } = req.params;
+    const indice = parseInt(index, 10);
+    const body = req.body as {
+      descripcion?: string;
+      codigoPostal?: string;
+      giroId?: string;
+      garantias?: GarantiaResumen[];
+      version: number;
     };
-    const validation = computeValidation({ ...merged, hasClaveIncendio });
 
-    const result = await pool.query(
+    // 1. Quote existence guard
+    const quote = await findQuoteRow(folio);
+    if (!quote) { next(new QuoteNotFoundError(folio)); return; }
+
+    // 2. Location existence guard
+    const location = await findLocationRow(folio, indice);
+    if (!location) { next(new LocationNotFoundError(indice)); return; }
+
+    // 3. Optimistic lock pre-check on the location row
+    if (location.version !== body.version) {
+      next(new VersionConflictError(body.version, location.version));
+      return;
+    }
+
+    // 4. Validate garantias (if provided)
+    if (body.garantias && !assertGarantias(body.garantias, next)) return;
+
+    // 5. Validate codigoPostal — throws ExternalValidationError if not found
+    if (body.codigoPostal) {
+      await externalCore.validatePostalCode(body.codigoPostal);
+    }
+
+    // 6. Validate giroId against catalog
+    let giroInfo: { id: string; nombre: string; claveIncendio: string | null } | null = null;
+    if (body.giroId) {
+      giroInfo = await externalCore.getGiroInfo(body.giroId);
+      if (!giroInfo) {
+        next(new ValidationError(
+          `Giro no encontrado: ${body.giroId}`,
+          { field: 'giroId', value: body.giroId },
+        ));
+        return;
+      }
+    }
+
+    // 7. Compute new validation state using merged (patch + existing) values
+    const effectiveCp        = body.codigoPostal ?? location.codigo_postal;
+    const effectiveGiroId    = body.giroId       ?? location.giro_id;
+    const effectiveGarantias = body.garantias    ?? location.garantias;
+
+    const validation = computeValidation({
+      codigoPostal:     effectiveCp,
+      giroId:           effectiveGiroId,
+      garantias:        effectiveGarantias,
+      hasClaveIncendio: giroInfo ? !!giroInfo.claveIncendio : undefined,
+    });
+
+    // 8. Build dynamic UPDATE — only patch provided fields
+    //    $1 = folio, $2 = indice, $3 = body.version (optimistic lock)
+    const setClauses: string[] = ['version = version + 1'];
+    const params: unknown[]    = [folio, indice, body.version];
+    let idx = 4;
+
+    if (body.descripcion  !== undefined) { setClauses.push(`descripcion   = $${idx++}`); params.push(body.descripcion); }
+    if (body.codigoPostal !== undefined) { setClauses.push(`codigo_postal = $${idx++}`); params.push(body.codigoPostal); }
+    if (body.giroId       !== undefined) { setClauses.push(`giro_id       = $${idx++}`); params.push(body.giroId); }
+    if (body.garantias    !== undefined) { setClauses.push(`garantias     = $${idx++}`); params.push(JSON.stringify(body.garantias)); }
+
+    setClauses.push(`estado_validacion   = $${idx++}`); params.push(validation.estadoValidacion);
+    setClauses.push(`alertas_bloqueantes = $${idx++}`); params.push(JSON.stringify(validation.alertasBloqueantes));
+
+    // WHERE includes version for race-condition safety (second check at DB level)
+    const updateResult = await pool.query(
       `UPDATE locations
-       SET descripcion = $1, codigo_postal = $2, giro_id = $3,
-           garantias = $4, estado_validacion = $5, alertas_bloqueantes = $6,
-           version = version + 1, fecha_actualizacion = NOW()
-       WHERE numero_folio = $7 AND indice_ubicacion = $8 AND version = $9
-       RETURNING indice_ubicacion, descripcion, codigo_postal, giro_id,
-                 estado_validacion, alertas_bloqueantes, garantias, version`,
-      [
-        merged.descripcion,
-        merged.codigoPostal,
-        merged.giroId,
-        JSON.stringify(merged.garantias),
-        validation.estadoValidacion,
-        JSON.stringify(validation.alertasBloqueantes),
-        folio,
-        index,
-        body.version,
-      ]
+          SET ${setClauses.join(', ')}
+        WHERE numero_folio = $1
+          AND indice_ubicacion = $2
+          AND version = $3
+        RETURNING ${LOC_COLS}`,
+      params,
     );
 
-    if (result.rows.length === 0) {
-      throw new VersionConflictError(body.version, (locationRow.version as number) + 1);
+    // Race condition: the row was updated by another request between our read and this write
+    if (updateResult.rows.length === 0) {
+      next(new VersionConflictError(body.version, location.version));
+      return;
     }
 
-    // Invalidate previous calculation if the quote was in CALCULADA state
-    if ((quoteRow.estado_cotizacion as string) === 'CALCULADA') {
-      await pool.query(
-        `UPDATE quotes
-         SET primas_por_ubicacion = NULL,
-             estado_cotizacion = 'COBERTURAS_SELECCIONADAS',
-             version = version + 1,
-             fecha_ultima_actualizacion = NOW()
-         WHERE numero_folio = $1`,
-        [folio]
-      );
-    }
-
-    const updated = rowToUbicacionResumen(result.rows[0] as Record<string, unknown>);
-    res.status(200).json({ data: updated });
+    res.status(200).json({
+      data: toUbicacionResumen(updateResult.rows[0] as LocationRow),
+    });
   } catch (err) {
     next(err);
   }

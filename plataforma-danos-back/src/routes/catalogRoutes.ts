@@ -3,21 +3,18 @@ import {
   getAgents,
   getSubscribers,
   getGiros,
-  getPostalCode,
 } from '../controllers/CatalogController';
+import { validateCatalogQuery } from '../middlewares/validateRequest';
 
 const router = Router();
 
-// GET /api/v1/catalogs/agents
-router.get('/agents', getAgents);
+// GET /catalogs/agents — proxy to core-ohs agents list
+router.get('/agents', validateCatalogQuery, getAgents);
 
-// GET /api/v1/catalogs/subscribers
-router.get('/subscribers', getSubscribers);
+// GET /catalogs/subscribers — proxy to core-ohs subscribers list
+router.get('/subscribers', validateCatalogQuery, getSubscribers);
 
-// GET /api/v1/catalogs/giros
-router.get('/giros', getGiros);
-
-// GET /api/v1/catalogs/postal-codes/:cp
-router.get('/postal-codes/:cp', getPostalCode);
+// GET /catalogs/giros — proxy to core-ohs giros list
+router.get('/giros', validateCatalogQuery, getGiros);
 
 export default router;

@@ -33,9 +33,9 @@
 - [x] Configurar Tailwind  
 - [x] Configurar Vite  
 - [x] Configurar scripts frontend  
-- Configurar Docker Compose  
-- Crear Dockerfile backend  
-- Crear Dockerfile frontend  
+- [x] Configurar Docker Compose  
+- [x] Crear Dockerfile backend  
+- [x] Crear Dockerfile frontend  
 - Crear scripts de setup  
 - Configurar base de datos  
 - Ejecutar migraciones  

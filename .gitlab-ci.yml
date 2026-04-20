@@ -1,0 +1,267 @@
+# GitLab CI/CD pipeline para cotizador-danos (backend + frontend)
+
+stages:
+  - install
+  - test
+  - build
+  - deploy
+
+variables:
+  NODE_ENV: test
+  POSTGRES_DB: cotizador_test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  # Las siguientes deben configurarse como variables protegidas en GitLab UI
+  # JWT_SECRET, DB_HOST, DB_PORT, DB_USER, DB_PASS, etc.
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - plataforma-danos-back/node_modules/
+    - cotizador-danos-web/node_modules/
+
+# Backend: Install dependencies
+backend_install:
+  stage: install
+  image: node:20
+  script:
+    - cd plataforma-danos-back
+    - npm ci
+  artifacts:
+    paths:
+      - plataforma-danos-back/node_modules/
+
+# Frontend: Install dependencies
+frontend_install:
+  stage: install
+  image: node:20
+  script:
+    - cd cotizador-danos-web
+    - npm ci
+  artifacts:
+    paths:
+      - cotizador-danos-web/node_modules/
+
+# Backend: Run tests
+backend_test:
+  stage: test
+  image: node:20
+  services:
+    - name: postgres:15
+      alias: postgres
+  variables:
+    POSTGRES_DB: cotizador_test
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_USER: postgres
+    DB_PASS: postgres
+  script:
+    - cd plataforma-danos-back
+    - npm run build
+    - npm run test
+  dependencies:
+    - backend_install
+
+# Frontend: Run tests
+frontend_test:
+  stage: test
+  image: node:20
+  script:
+    - cd cotizador-danos-web
+    - npm run build
+    - npm run test
+  dependencies:
+    - frontend_install
+
+# Backend: Build
+backend_build:
+  stage: build
+  image: node:20
+  script:
+    - cd plataforma-danos-back
+    - npm run build
+  dependencies:
+    - backend_test
+  artifacts:
+    paths:
+      - plataforma-danos-back/dist/
+
+# Frontend: Build
+frontend_build:
+  stage: build
+  image: node:20
+  script:
+    - cd cotizador-danos-web
+    - npm run build
+  dependencies:
+    - frontend_test
+  artifacts:
+    paths:
+      - cotizador-danos-web/dist/
+
+# Deploy (ejemplo: solo en main)
+deploy:
+  stage: deploy
+  image: node:20
+  script:
+    - echo "Despliegue automatizado: personalizar según entorno"
+    # Aquí puedes agregar comandos para Docker, SSH, etc.
+  only:
+    - main
+  dependencies:
+    - backend_build
+    - frontend_build
+stages:
+  - install
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  NODE_VERSION: "18"
+  POSTGRES_DB: cotizador_danos_test
+  POSTGRES_USER: test_user
+  POSTGRES_PASSWORD: test_password
+
+# ============================================================================
+# BACKEND PIPELINE
+# ============================================================================
+
+backend:install:
+  stage: install
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd plataformas-danos-back
+    - npm ci
+  cache:
+    key: backend-${CI_COMMIT_REF_SLUG}
+    paths:
+      - plataformas-danos-back/node_modules/
+  artifacts:
+    paths:
+      - plataformas-danos-back/node_modules/
+    expire_in: 1 day
+
+backend:lint:
+  stage: lint
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - backend:install
+  script:
+    - cd plataformas-danos-back
+    - npm run lint
+  only:
+    changes:
+      - plataformas-danos-back/**/*
+
+backend:test:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  services:
+    - postgres:15-alpine
+  variables:
+    DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  dependencies:
+    - backend:install
+  script:
+    - cd plataformas-danos-back
+    - npm run test -- --coverage
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: plataformas-danos-back/coverage/cobertura-coverage.xml
+    paths:
+      - plataformas-danos-back/coverage/
+    expire_in: 1 week
+  only:
+    changes:
+      - plataformas-danos-back/**/*
+
+backend:build:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - backend:install
+  script:
+    - cd plataformas-danos-back
+    - npm run build
+  artifacts:
+    paths:
+      - plataformas-danos-back/dist/
+    expire_in: 1 day
+  only:
+    - main
+    - develop
+
+# ============================================================================
+# FRONTEND PIPELINE
+# ============================================================================
+
+frontend:install:
+  stage: install
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd cotizador-danos-web
+    - npm ci
+  cache:
+    key: frontend-${CI_COMMIT_REF_SLUG}
+    paths:
+      - cotizador-danos-web/node_modules/
+  artifacts:
+    paths:
+      - cotizador-danos-web/node_modules/
+    expire_in: 1 day
+
+frontend:lint:
+  stage: lint
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - frontend:install
+  script:
+    - cd cotizador-danos-web
+    - npm run lint
+  only:
+    changes:
+      - cotizador-danos-web/**/*
+
+frontend:test:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - frontend:install
+  script:
+    - cd cotizador-danos-web
+    - npm run test:coverage
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cotizador-danos-web/coverage/cobertura-coverage.xml
+    paths:
+      - cotizador-danos-web/coverage/
+    expire_in: 1 week
+  only:
+    changes:
+      - cotizador-danos-web/**/*
+
+frontend:build:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - frontend:install
+  script:
+    - cd cotizador-danos-web
+    - npm run build
+  artifacts:
+    paths:
+      - cotizador-danos-web/dist/
+    expire_in: 1 day
+  only:
+    - main
+    - develop

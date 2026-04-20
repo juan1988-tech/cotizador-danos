@@ -2053,7 +2053,7 @@ los endpoints con manejo de errores consistente"
 todos los endpoints con ejemplos de request/response"
 
 "Implementa rate limiting y logging middleware usando 
-express-rate-limit y winston"
+express-rate-limit"
 ```
 
 ### 📊 Mock de Servicios de Referencia

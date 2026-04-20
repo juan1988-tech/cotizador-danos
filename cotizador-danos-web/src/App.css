@@ -1,1 +1,163 @@
 @import "tailwindcss";
+
+@theme {
+
+  /* Paleta personalizada "Gray" (equivalente a coolGray de v3) */
+  --color-gray-50: oklch(0.985 0.002 247.86);
+  --color-gray-100: oklch(0.967 0.003 247.896);
+  --color-gray-200: oklch(0.922 0.005 255.508);
+  --color-gray-300: oklch(0.871 0.01 252.894);
+  --color-gray-400: oklch(0.704 0.015 256.801);
+  --color-gray-500: oklch(0.553 0.016 257.417);
+  --color-gray-600: oklch(0.446 0.017 256.788);
+  --color-gray-700: oklch(0.371 0.015 254.604);
+  --color-gray-800: oklch(0.279 0.012 256.847);
+  --color-gray-900: oklch(0.221 0.01 264.695);
+  --color-gray-950: oklch(0.139 0.008 265.755);
+
+  /* Paleta personalizada "Blue" (equivalente a lightBlue de v3) */
+  --color-blue-50: oklch(0.982 0.013 236.62);
+  --color-blue-100: oklch(0.963 0.025 235.81);
+  --color-blue-200: oklch(0.928 0.048 233.788);
+  --color-blue-300: oklch(0.878 0.088 230.902);
+  --color-blue-400: oklch(0.758 0.139 232.661);
+  --color-blue-500: oklch(0.631 0.171 238.176);
+  --color-blue-600: oklch(0.506 0.181 243.151);
+  --color-blue-700: oklch(0.429 0.162 248.284);
+  --color-blue-800: oklch(0.368 0.124 250.337);
+  --color-blue-900: oklch(0.313 0.086 254.604);
+  --color-blue-950: oklch(0.211 0.053 266.277);
+
+  /* Paleta personalizada "Red" (equivalente a rose de v3) */
+  --color-red-50: oklch(0.981 0.011 12.422);
+  --color-red-100: oklch(0.966 0.023 12.752);
+  --color-red-200: oklch(0.936 0.044 10.584);
+  --color-red-300: oklch(0.885 0.088 7.706);
+  --color-red-400: oklch(0.776 0.155 5.873);
+  --color-red-500: oklch(0.665 0.195 7.706);
+  --color-red-600: oklch(0.560 0.196 9.869);
+  --color-red-700: oklch(0.478 0.170 10.272);
+  --color-red-800: oklch(0.415 0.141 9.619);
+  --color-red-900: oklch(0.377 0.113 10.272);
+  --color-red-950: oklch(0.212 0.072 12.422);
+
+  /* Paleta personalizada "Pink" (equivalente a fuchsia de v3) */
+  --color-pink-50: oklch(0.977 0.017 318.514);
+  --color-pink-100: oklch(0.955 0.037 318.013);
+  --color-pink-200: oklch(0.914 0.074 317.648);
+  --color-pink-300: oklch(0.851 0.139 320.576);
+  --color-pink-400: oklch(0.754 0.211 322.154);
+  --color-pink-500: oklch(0.667 0.241 326.393);
+  --color-pink-600: oklch(0.571 0.244 329.946);
+  --color-pink-700: oklch(0.487 0.214 329.365);
+  --color-pink-800: oklch(0.423 0.179 327.827);
+  --color-pink-900: oklch(0.375 0.147 327.089);
+  --color-pink-950: oklch(0.238 0.109 327.551);
+
+  /* Colores adicionales propuestos - Paleta "Emerald" */
+  --color-emerald-50: oklch(0.980 0.024 155.826);
+  --color-emerald-100: oklch(0.954 0.050 156.743);
+  --color-emerald-200: oklch(0.908 0.095 157.778);
+  --color-emerald-300: oklch(0.844 0.143 160.011);
+  --color-emerald-400: oklch(0.749 0.165 162.48);
+  --color-emerald-500: oklch(0.653 0.166 162.48);
+  --color-emerald-600: oklch(0.543 0.145 164.624);
+  --color-emerald-700: oklch(0.454 0.119 165.294);
+  --color-emerald-800: oklch(0.378 0.093 164.071);
+  --color-emerald-900: oklch(0.321 0.073 166.056);
+  --color-emerald-950: oklch(0.187 0.049 168.148);
+
+  /* Colores adicionales propuestos - Paleta "Amber" */
+  --color-amber-50: oklch(0.988 0.024 96.029);
+  --color-amber-100: oklch(0.970 0.058 91.558);
+  --color-amber-200: oklch(0.939 0.110 88.701);
+  --color-amber-300: oklch(0.894 0.152 84.524);
+  --color-amber-400: oklch(0.827 0.171 73.684);
+  --color-amber-500: oklch(0.756 0.159 61.695);
+  --color-amber-600: oklch(0.641 0.150 47.099);
+  --color-amber-700: oklch(0.524 0.137 39.366);
+  --color-amber-800: oklch(0.446 0.115 39.366);
+  --color-amber-900: oklch(0.387 0.093 39.366);
+  --color-amber-950: oklch(0.234 0.065 39.366);
+
+  /* ============================================
+     TIPOGRAFÍA
+     ============================================ */
+  
+  /* Familias de fuentes personalizadas */
+  --font-sans: "Graphik", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Merriweather", ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  
+  /* Tamaños de fuente adicionales (opcional) */
+  --text-xxs: 0.625rem; /* 10px */
+  --text-xs: 0.75rem;   /* 12px */
+  --text-sm: 0.875rem;  /* 14px */
+  --text-base: 1rem;    /* 16px */
+  --text-lg: 1.125rem;  /* 18px */
+  --text-xl: 1.25rem;   /* 20px */
+  --text-2xl: 1.5rem;   /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem;  /* 36px */
+  --text-5xl: 3rem;     /* 48px */
+
+
+  /* Espacios extra grandes */
+  --spacing-128: 32rem;  /* 512px */
+  --spacing-144: 36rem;  /* 576px */
+  --spacing-160: 40rem;  /* 640px */
+  --spacing-192: 48rem;  /* 768px */
+
+  /* BORDER RADIUS */
+  
+  --radius-4xl: 2rem;    /* 32px */
+  --radius-5xl: 2.5rem;  /* 40px */
+  --radius-6xl: 3rem;    /* 48px */
+
+  /* BREAKPOINTS PERSONALIZADOS */
+  
+  --breakpoint-3xl: 1920px;
+  --breakpoint-4xl: 2560px;
+
+  /* SOMBRAS PERSONALIZADAS */
+  
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.5);
+  --shadow-brutal: 8px 8px 0px rgba(0, 0, 0, 1);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+  /* ANIMACIONES Y TRANSICIONES */
+  
+  --ease-fluid: cubic-bezier(0.3, 0, 0, 1);
+  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55)
+
+  /* Equivalentes a estados básicos */
+  @variant focus-visible { &:focus-visible }
+  @variant disabled { &:disabled }
+  @variant active { &:active }
+
+  /* Combinadas (Hocus) */
+  @variant hocus { &:hover, &:focus-visible }
+  
+  /* Selectores complejos (Group y Peer) */
+  @variant group-hocus { @media (scripting: none) { .group:hover &, .group:focus-visible & } }
+  @variant peer-hocus { .peer:hover ~ &, .peer:focus-visible ~ & }
+
+  /* Atributos de estado */
+  @variant open { &[open] }
+  @variant checked { &:checked }
+  @variant selected { &[aria-selected="true"] }
+
+  /* Data attributes */
+  @variant loading { &[data-loading="true"] }
+  @variant error { &[data-error="true"] }   
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility text-pretty {
+  text-wrap: pretty;
+}
+

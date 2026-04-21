@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QuoteHeader } from '../components/QuoteHeader';
 import { QuoteForm } from '../components/QuoteForm';
+import { GeneralInfoView } from '../components/GeneralInfoView';
 import { Alert } from '../../../shared/components/atoms/Alert';
 import { PageLayout } from '../../../shared/components/templates/PageLayout';
 import { useQuote } from '../hooks/useQuote';
+import type { QuoteState } from '../types/quote.types';
 
 const TEMP_AGENTS = [
   { id: 'AGT-001', descripcion: 'Juan Perez' },
@@ -23,9 +25,19 @@ const TEMP_GIROS = [
   { id: 'GIR-003', descripcion: 'Servicios' },
 ];
 
+const CONTINUABLE_STATES: QuoteState[] = [
+  'DATOS_GENERALES_COMPLETOS',
+  'UBICACIONES_CONFIGURADAS',
+  'COBERTURAS_SELECCIONADAS',
+  'CALCULADA',
+];
+
 export const GeneralInfoPage = () => {
   const navigate = useNavigate();
   const { quote, loading, error, folio, loadQuote, saveGeneralData } = useQuote();
+  const [mode, setMode] = useState<'view' | 'edit'>(() =>
+    quote?.datosAsegurado ? 'view' : 'edit',
+  );
 
   useEffect(() => {
     if (folio && !quote) {
@@ -33,12 +45,27 @@ export const GeneralInfoPage = () => {
     }
   }, [folio, quote, loadQuote]);
 
+  // Switch to edit mode when a freshly loaded quote has no datosAsegurado
+  useEffect(() => {
+    if (quote && !quote.datosAsegurado) {
+      setMode('edit');
+    }
+  }, [quote]);
+
   const handleSubmit = async (data: Parameters<typeof saveGeneralData>[0]) => {
     await saveGeneralData(data);
+    setMode('view');
+  };
+
+  const handleContinue = () => {
     if (folio) {
       navigate(`/quotes/${folio}/locations`);
     }
   };
+
+  const canContinue = quote
+    ? CONTINUABLE_STATES.includes(quote.estadoCotizacion)
+    : false;
 
   if (loading && !quote) {
     return (
@@ -57,17 +84,26 @@ export const GeneralInfoPage = () => {
           <Alert type="danger">{error}</Alert>
         )}
 
-        <div className="rounded-lg bg-white border border-slate-200 p-6">
-          <QuoteForm
-            initialData={quote?.datosAsegurado}
-            onSubmit={handleSubmit}
-            loading={loading}
-            error={error}
-            agents={TEMP_AGENTS}
-            subscribers={TEMP_SUBSCRIBERS}
-            giros={TEMP_GIROS}
+        {mode === 'view' && quote?.datosAsegurado ? (
+          <GeneralInfoView
+            data={quote.datosAsegurado}
+            onEdit={() => setMode('edit')}
+            onContinue={handleContinue}
+            canContinue={canContinue}
           />
-        </div>
+        ) : (
+          <div className="rounded-lg bg-white border border-slate-200 p-6">
+            <QuoteForm
+              initialData={quote?.datosAsegurado}
+              onSubmit={handleSubmit}
+              loading={loading}
+              error={error}
+              agents={TEMP_AGENTS}
+              subscribers={TEMP_SUBSCRIBERS}
+              giros={TEMP_GIROS}
+            />
+          </div>
+        )}
       </div>
     </PageLayout>
   );

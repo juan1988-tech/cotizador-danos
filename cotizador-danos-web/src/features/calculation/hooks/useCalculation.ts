@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuoteStore } from '../../../store/quoteStore';
 import { getCoverageOptions, putCoverageOptions, calculatePremium } from '../services/calculationApi';
+import { OptimisticLockError } from '../../../shared/utils/errors';
 import type { GetCoverageOptionsResponse, LocationPremium } from '../types/calculation.types';
 
 export interface UseCalculationReturn {
@@ -22,11 +23,13 @@ export interface UseCalculationReturn {
 
 export function useCalculation(): UseCalculationReturn {
   const { folio } = useParams<{ folio: string }>();
-  const { currentQuote, updateVersion, updateCoberturas, updatePrimas } = useQuoteStore();
+  const { currentQuote, updateVersion, updateCoberturas, updateEstado, updatePrimas } = useQuoteStore();
   const [coverageOptions, setCoverageOptions] = useState<GetCoverageOptionsResponse['data']>([]);
   const [calculationResult, setCalculationResult] = useState<UseCalculationReturn['calculationResult']>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Guard against concurrent invocations before React re-renders with loading=true
+  const isInFlight = useRef(false);
 
   const loadCoverageOptions = useCallback(async () => {
     if (!folio) return;
@@ -53,11 +56,14 @@ export function useCalculation(): UseCalculationReturn {
   }, []);
 
   const saveCoverageOptions = useCallback(async () => {
-    if (!folio || !currentQuote) return;
+    if (!folio) return;
+    // Read fresh version from store to avoid stale closure after concurrent mutations
+    const freshQuote = useQuoteStore.getState().currentQuote;
+    if (!freshQuote) return;
     setLoading(true);
     try {
       const result = await putCoverageOptions(folio, {
-        version: currentQuote.version,
+        version: freshQuote.version,
         opcionesCobertura: coverageOptions.map(opt => ({
           codigoCobertura: opt.codigoCobertura,
           seleccionada: opt.seleccionada,
@@ -65,6 +71,7 @@ export function useCalculation(): UseCalculationReturn {
       });
       setCoverageOptions(result.opcionesCobertura);
       updateCoberturas(result.opcionesCobertura);
+      updateEstado(result.estadoCotizacion);
       updateVersion(result.version);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar coberturas');
@@ -72,15 +79,20 @@ export function useCalculation(): UseCalculationReturn {
     } finally {
       setLoading(false);
     }
-  }, [folio, currentQuote, coverageOptions, updateCoberturas, updateVersion]);
+  }, [folio, coverageOptions, updateCoberturas, updateEstado, updateVersion]);
 
   const calculate = useCallback(async () => {
-    if (!folio || !currentQuote) return;
+    // Re-entry guard: prevents concurrent calls before React re-renders with loading=true
+    if (!folio || isInFlight.current) return;
+    // Read fresh version from store — avoids stale closure when called after saveCoverageOptions
+    const freshQuote = useQuoteStore.getState().currentQuote;
+    if (!freshQuote) return;
+    isInFlight.current = true;
     setLoading(true);
     setError(null);
     try {
       const result = await calculatePremium(folio, {
-        version: currentQuote.version,
+        version: freshQuote.version,
       });
       setCalculationResult({
         primaNetaTotal: result.primaNetaTotal,
@@ -91,12 +103,18 @@ export function useCalculation(): UseCalculationReturn {
       updatePrimas(result.primaNetaTotal, result.primaComercialTotal, result.primasPorUbicacion);
       updateVersion(result.version);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al calcular prima');
-      throw err;
+      if (err instanceof OptimisticLockError) {
+        setError('La cotización fue modificada por otra operación. Por favor, intenta de nuevo.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al calcular prima');
+      }
+      // Do not re-throw: error is managed via state; re-throwing causes
+      // "Uncaught (in promise)" in event handlers and unmounts test components.
     } finally {
       setLoading(false);
+      isInFlight.current = false;
     }
-  }, [folio, currentQuote, updatePrimas, updateVersion]);
+  }, [folio, updatePrimas, updateVersion]);
 
   // Cargar opciones al montar
   useEffect(() => {

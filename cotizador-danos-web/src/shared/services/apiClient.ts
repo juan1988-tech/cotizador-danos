@@ -24,6 +24,10 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 404) {
       throw new NotFoundError(error.response.data.error);
     }
+    // Surface the server's error message for all other API errors (400, 422, etc.)
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
     throw error;
   }
 );

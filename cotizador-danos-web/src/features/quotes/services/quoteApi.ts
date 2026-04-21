@@ -14,6 +14,14 @@ const BASE_PATH = '/api/v1/quotes';
  */
 export async function createQuote(): Promise<CreateQuoteResponse['data']> {
   const response = await apiClient.post<CreateQuoteResponse>(BASE_PATH);
+  
+  if(!response.data?.data?.numeroFolio) {
+    console.log("Fallen")
+  }
+
+
+
+
   return response.data.data;
 }
 

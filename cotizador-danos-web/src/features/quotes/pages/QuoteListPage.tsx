@@ -1,25 +1,16 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../shared/components/atoms/Button';
 import { Alert } from '../../../shared/components/atoms/Alert';
 import { PageLayout } from '../../../shared/components/templates/PageLayout';
-import { createQuote } from '../services/quoteApi';
+import { useQuote } from '../hooks/useQuote';
 
 export const QuoteListPage = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { createNewQuote, loading, error } = useQuote();
 
   const handleNewQuote = async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const data = await createQuote();
-      navigate(`/quotes/${data.numeroFolio}/general-info`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear la cotización');
-    } finally {
-      setLoading(false);
+      await createNewQuote();
+    } catch {
+      // error state is managed by useQuote via useQuoteStore
     }
   };
 

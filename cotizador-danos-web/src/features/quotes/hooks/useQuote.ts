@@ -32,8 +32,19 @@ export function useQuote(): UseQuoteReturn {
 
   const createNewQuote = useCallback(async (): Promise<string> => {
     setLocalLoading(true);
+    setError(null);
     try {
       const data = await createQuote();
+      setQuote({
+        numeroFolio: data.numeroFolio,
+        estadoCotizacion: data.estadoCotizacion,
+        datosAsegurado: null,
+        configuracionLayout: null,
+        opcionesCobertura: null,
+        version: data.version,
+        fechaCreacion: data.fechaCreacion,
+        fechaUltimaActualizacion: data.fechaUltimaActualizacion,
+      });
       navigate(`/quotes/${data.numeroFolio}/general-info`);
       return data.numeroFolio;
     } catch (err) {
@@ -42,7 +53,7 @@ export function useQuote(): UseQuoteReturn {
     } finally {
       setLocalLoading(false);
     }
-  }, [navigate, setError]);
+  }, [navigate, setError, setQuote]);
 
   const saveGeneralData = useCallback(async (data: Omit<PatchGeneralDataRequest, 'version'>) => {
     if (!folio || !currentQuote) return;

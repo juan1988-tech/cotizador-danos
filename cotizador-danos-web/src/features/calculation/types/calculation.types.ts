@@ -50,6 +50,7 @@ export interface PutCoverageOptionsRequest {
 
 export interface PutCoverageOptionsResponse {
   data: {
+    estadoCotizacion: 'COBERTURAS_SELECCIONADAS' | 'CALCULADA';
     opcionesCobertura: {
       codigoCobertura: string;
       descripcion: string;

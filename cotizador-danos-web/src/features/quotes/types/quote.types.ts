@@ -74,7 +74,6 @@ export interface Quote {
   fechaUltimaActualizacion: string;
 }
 
-// ─── API Request/Response types ──────────────────────────────────────────────
 export interface CreateQuoteResponse {
   data: {
     numeroFolio: string;

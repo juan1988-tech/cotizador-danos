@@ -6,6 +6,23 @@ import { Alert } from '../../../shared/components/atoms/Alert';
 import { PageLayout } from '../../../shared/components/templates/PageLayout';
 import { useQuote } from '../hooks/useQuote';
 
+const TEMP_AGENTS = [
+  { id: 'AGT-001', descripcion: 'Juan Perez' },
+  { id: 'AGT-002', descripcion: 'Maria Garcia' },
+  { id: 'AGT-003', descripcion: 'Carlos Ramirez' },
+];
+
+const TEMP_SUBSCRIBERS = [
+  { id: 'SUB-001', descripcion: 'Suscriptor Principal' },
+  { id: 'SUB-002', descripcion: 'Suscriptor Secundario' },
+];
+
+const TEMP_GIROS = [
+  { id: 'GIR-001', descripcion: 'Comercial' },
+  { id: 'GIR-002', descripcion: 'Industrial' },
+  { id: 'GIR-003', descripcion: 'Servicios' },
+];
+
 export const GeneralInfoPage = () => {
   const navigate = useNavigate();
   const { quote, loading, error, folio, loadQuote, saveGeneralData } = useQuote();
@@ -46,6 +63,9 @@ export const GeneralInfoPage = () => {
             onSubmit={handleSubmit}
             loading={loading}
             error={error}
+            agents={TEMP_AGENTS}
+            subscribers={TEMP_SUBSCRIBERS}
+            giros={TEMP_GIROS}
           />
         </div>
       </div>

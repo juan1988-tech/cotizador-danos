@@ -35,7 +35,7 @@ export const LocationForm = ({
   giros = [],
 }: LocationFormProps) => {
   const [formData, setFormData] = useState({
-    nombreUbicacion: '',
+    descripcion: '',
     direccion: '',
     codigoPostal: '',
     estado: '',
@@ -50,7 +50,7 @@ export const LocationForm = ({
     if (initialData) {
       setFormData(prev => ({
         ...prev,
-        nombreUbicacion: initialData.nombreUbicacion ?? '',
+        descripcion: initialData.descripcion ?? '',
         direccion: initialData.direccion ?? '',
         codigoPostal: initialData.codigoPostal ?? '',
         estado: initialData.estado ?? '',
@@ -99,7 +99,11 @@ export const LocationForm = ({
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!formData.codigoPostal.trim()) errors.codigoPostal = 'El código postal es requerido';
+    if (!formData.codigoPostal.trim()) {
+      errors.codigoPostal = 'El código postal es requerido';
+    } else if (!/^\d{6}$/.test(formData.codigoPostal.trim())) {
+      errors.codigoPostal = 'El código postal debe contener exactamente 6 dígitos';
+    }
     if (!formData.giroId) errors.giroId = 'Seleccione un giro';
     if (formData.garantias.length === 0) errors.garantias = 'Agregue al menos una garantía';
     const invalidSumas = formData.garantias.some(g => g.sumaAsegurada <= 0);
@@ -125,8 +129,8 @@ export const LocationForm = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField label="Nombre de Ubicación">
           <Input
-            value={formData.nombreUbicacion}
-            onChange={(e) => handleChange('nombreUbicacion', e.target.value)}
+            value={formData.descripcion}
+            onChange={(e) => handleChange('descripcion', e.target.value)}
             placeholder="Ej: Bodega Principal"
           />
         </FormField>
@@ -135,8 +139,8 @@ export const LocationForm = ({
           <Input
             value={formData.codigoPostal}
             onChange={(e) => handleChange('codigoPostal', e.target.value)}
-            placeholder="00000"
-            maxLength={5}
+            placeholder="000000"
+            maxLength={6}
             error={validationErrors.codigoPostal}
           />
         </FormField>
@@ -145,7 +149,7 @@ export const LocationForm = ({
           <Input
             value={formData.estado}
             onChange={(e) => handleChange('estado', e.target.value)}
-            placeholder="Ej: Ciudad de México"
+            placeholder="Ej: Bogotá"
           />
         </FormField>
 
@@ -153,7 +157,7 @@ export const LocationForm = ({
           <Input
             value={formData.municipio}
             onChange={(e) => handleChange('municipio', e.target.value)}
-            placeholder="Ej: Cuauhtémoc"
+            placeholder="Ej: Chapinero"
           />
         </FormField>
 

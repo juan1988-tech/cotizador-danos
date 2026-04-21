@@ -14,9 +14,7 @@ export const QuoteLayout = () => {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
-      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white shadow-sm">
-        {/* Brand header */}
+      <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2 border-b border-slate-200 px-6 py-5">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

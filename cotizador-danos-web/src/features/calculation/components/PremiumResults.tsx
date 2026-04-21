@@ -23,7 +23,7 @@ export const PremiumResults = ({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Totales globales */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+      <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
         <h3 className="text-lg font-bold text-slate-800 mb-4">Resultado del Cálculo</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg p-4 shadow-sm text-center">

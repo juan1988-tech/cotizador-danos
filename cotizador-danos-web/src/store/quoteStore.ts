@@ -17,6 +17,7 @@ interface QuoteStore {
   updateLayoutConfig: (config: LayoutConfig) => void;
   updateCoberturas: (coberturas: OpcionCobertura[]) => void;
   updatePrimas: (primaNetaTotal: number, primaComercialTotal: number, primasPorUbicacion: LocationPremium[]) => void;
+  updateEstado: (estadoCotizacion: Quote['estadoCotizacion']) => void;
   updateVersion: (version: number) => void;
   
   // Reset
@@ -77,6 +78,12 @@ export const useQuoteStore = create<QuoteStore>((set) => ({
           estadoCotizacion: 'CALCULADA',
         },
       };
+    }),
+
+  updateEstado: (estadoCotizacion) =>
+    set((state) => {
+      if (!state.currentQuote) return state;
+      return { currentQuote: { ...state.currentQuote, estadoCotizacion } };
     }),
 
   updateVersion: (version) =>

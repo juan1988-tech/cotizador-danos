@@ -32,7 +32,7 @@ export async function getLocations(folio: string): Promise<UbicacionResumen[]> {
   const response = await apiClient.get<GetLocationsResponse>(
     `${getBasePath(folio)}/locations`
   );
-  return response.data.data;
+  return response.data.data.ubicaciones;
 }
 
 /**
@@ -52,7 +52,7 @@ export async function patchLocation(
   folio: string,
   index: number,
   data: PatchLocationRequest
-): Promise<PatchLocationResponse['data']> {
+): Promise<UbicacionResumen> {
   const response = await apiClient.patch<PatchLocationResponse>(
     `${getBasePath(folio)}/locations/${index}`,
     data

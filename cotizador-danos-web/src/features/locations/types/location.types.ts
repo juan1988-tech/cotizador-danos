@@ -73,12 +73,19 @@ export interface UbicacionResumen {
 
 // ─── API Request/Response types ──────────────────────────────────────────────
 export interface GetLocationsResponse {
-  data: UbicacionResumen[];
+  data: {
+    ubicaciones: UbicacionResumen[];
+    resumen: {
+      total: number;
+      completas: number;
+      incompletas: number;
+    };
+  };
 }
 
 export interface PatchLocationRequest {
   version: number;
-  nombreUbicacion?: string;
+  descripcion?: string;
   direccion?: string;
   codigoPostal?: string;
   estado?: string;
@@ -93,11 +100,7 @@ export interface PatchLocationRequest {
 }
 
 export interface PatchLocationResponse {
-  data: {
-    ubicacion: UbicacionResumen;
-    version: number;
-    fechaUltimaActualizacion: string;
-  };
+  data: UbicacionResumen;
 }
 
 export interface PostLayoutRequest {

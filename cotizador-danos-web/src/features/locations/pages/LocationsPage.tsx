@@ -10,6 +10,7 @@ import { PageLayout } from '../../../shared/components/templates/PageLayout';
 import { Card } from '../../../shared/components/molecules/Card';
 import { useLocations } from '../hooks/useLocations';
 import { useQuoteStore } from '../../../store/quoteStore';
+import { apiClient } from '../../../shared/services/apiClient';
 import type { PatchLocationRequest } from '../types/location.types';
 
 const NUM_UBICACIONES_OPTIONS = Array.from({ length: 50 }, (_, i) => ({
@@ -32,12 +33,20 @@ export const LocationsPage = () => {
     getIncompleteCount,
   } = useLocations();
 
+  const [giros, setGiros] = useState<{ id: string; descripcion: string }[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [layoutForm, setLayoutForm] = useState({
     tipoLayout: 'UNIFORME' as 'UNIFORME' | 'PERSONALIZADO',
     numeroUbicaciones: 1,
   });
   const [layoutSaving, setLayoutSaving] = useState(false);
+
+  useEffect(() => {
+    apiClient
+      .get<{ data: { id: string; descripcion: string }[] }>('/api/v1/catalogs/giros')
+      .then((res) => setGiros(res.data.data))
+      .catch(() => setGiros([]));
+  }, []);
 
   const hasLayout = Boolean(currentQuote?.configuracionLayout);
 
@@ -125,6 +134,7 @@ export const LocationsPage = () => {
                   initialData={
                     locations.find(l => l.indiceUbicacion === editingIndex)
                       ? {
+                          descripcion: locations.find(l => l.indiceUbicacion === editingIndex)?.descripcion ?? '',
                           codigoPostal: locations.find(l => l.indiceUbicacion === editingIndex)?.codigoPostal ?? '',
                           giroId: locations.find(l => l.indiceUbicacion === editingIndex)?.giroId ?? '',
                           garantias: locations.find(l => l.indiceUbicacion === editingIndex)?.garantias ?? [],
@@ -135,6 +145,7 @@ export const LocationsPage = () => {
                   onCancel={() => setEditingIndex(null)}
                   loading={loading}
                   error={error}
+                  giros={giros}
                 />
               </Card>
             ) : (

@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import { ExternalCoreService } from '../services/ExternalCoreService';
+
+const externalCore = new ExternalCoreService();
 
 // ── GET /catalogs/agents ──────────────────────────────────────────────────────
 export async function getAgents(
@@ -30,13 +33,21 @@ export async function getSubscribers(
 
 // ── GET /catalogs/giros ───────────────────────────────────────────────────────
 export async function getGiros(
-  _req: Request,
-  _res: Response,
+  req: Request,
+  res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    // TODO: proxy to Plataforma-core-ohs /giros, support ?q filter
-    next(new Error('getGiros not yet implemented'));
+    const { q } = req.query as { q?: string };
+    const result = await externalCore.getGiros(q);
+    res.status(200).json({
+      data: result.data.map((g) => ({
+        id: g.id,
+        descripcion: g.nombre,
+        claveIncendio: g.claveIncendio,
+      })),
+      total: result.total,
+    });
   } catch (err) {
     next(err);
   }

@@ -40,15 +40,16 @@ export function useLocations(): UseLocationsReturn {
     index: number,
     data: Omit<PatchLocationRequest, 'version'>
   ) => {
-    if (!folio || !currentQuote) return;
+    if (!folio) return;
+    const location = locations.find(l => l.indiceUbicacion === index);
+    const locationVersion = location?.version ?? 0;
     setLoading(true);
     try {
-      const result = await patchLocation(folio, index, {
+      await patchLocation(folio, index, {
         ...data,
-        version: currentQuote.version,
+        version: locationVersion,
       });
-      updateVersion(result.version);
-      // Recargar ubicaciones para obtener estado actualizado
+      // Recargar ubicaciones para obtener versiones actualizadas
       await loadLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar ubicación');
@@ -56,7 +57,7 @@ export function useLocations(): UseLocationsReturn {
     } finally {
       setLoading(false);
     }
-  }, [folio, currentQuote, updateVersion, loadLocations]);
+  }, [folio, locations, loadLocations]);
 
   const createLayout = useCallback(async (
     data: Omit<PostLayoutRequest, 'version'>

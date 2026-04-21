@@ -119,10 +119,57 @@ INSERT INTO catalogos_giros (clave_giro, descripcion, clave_incendio) VALUES
   ('GIR-030', 'Oficinas administrativas',           'INC-03')
 ON CONFLICT (clave_giro) DO NOTHING;
 
-INSERT INTO catalogo_cp_zonas (codigo_postal, municipio, estado) VALUES
-  ('06600', 'Cuauhtémoc',  'Ciudad de México'),
-  ('44100', 'Guadalajara', 'Jalisco'),
-  ('64000', 'Monterrey',   'Nuevo León')
+INSERT INTO catalogo_cp_zonas (codigo_postal, municipio, estado, ciudad) VALUES
+  -- Bogotá D.C. (departamento 11) — por localidad
+  ('110111', 'Usaquén',               'Bogotá D.C.', 'Bogotá'),
+  ('110121', 'Usaquén',               'Bogotá D.C.', 'Bogotá'),
+  ('110131', 'Usaquén',               'Bogotá D.C.', 'Bogotá'),
+  ('110221', 'Chapinero',             'Bogotá D.C.', 'Bogotá'),
+  ('110231', 'Chapinero',             'Bogotá D.C.', 'Bogotá'),
+  ('110311', 'Santa Fe',              'Bogotá D.C.', 'Bogotá'),
+  ('110321', 'Santa Fe',              'Bogotá D.C.', 'Bogotá'),
+  ('110411', 'San Cristóbal',         'Bogotá D.C.', 'Bogotá'),
+  ('110421', 'San Cristóbal',         'Bogotá D.C.', 'Bogotá'),
+  ('110511', 'Usme',                  'Bogotá D.C.', 'Bogotá'),
+  ('110611', 'Tunjuelito',            'Bogotá D.C.', 'Bogotá'),
+  ('110711', 'Bosa',                  'Bogotá D.C.', 'Bogotá'),
+  ('110721', 'Bosa',                  'Bogotá D.C.', 'Bogotá'),
+  ('110811', 'Kennedy',               'Bogotá D.C.', 'Bogotá'),
+  ('110821', 'Kennedy',               'Bogotá D.C.', 'Bogotá'),
+  ('110831', 'Kennedy',               'Bogotá D.C.', 'Bogotá'),
+  ('110911', 'Fontibón',              'Bogotá D.C.', 'Bogotá'),
+  ('110921', 'Fontibón',              'Bogotá D.C.', 'Bogotá'),
+  ('111011', 'Engativá',              'Bogotá D.C.', 'Bogotá'),
+  ('111021', 'Engativá',              'Bogotá D.C.', 'Bogotá'),
+  ('111031', 'Engativá',              'Bogotá D.C.', 'Bogotá'),
+  ('111111', 'Suba',                  'Bogotá D.C.', 'Bogotá'),
+  ('111121', 'Suba',                  'Bogotá D.C.', 'Bogotá'),
+  ('111131', 'Suba',                  'Bogotá D.C.', 'Bogotá'),
+  ('111211', 'Barrios Unidos',        'Bogotá D.C.', 'Bogotá'),
+  ('111311', 'Teusaquillo',           'Bogotá D.C.', 'Bogotá'),
+  ('111411', 'Los Mártires',          'Bogotá D.C.', 'Bogotá'),
+  ('111511', 'Antonio Nariño',        'Bogotá D.C.', 'Bogotá'),
+  ('111611', 'Puente Aranda',         'Bogotá D.C.', 'Bogotá'),
+  ('111711', 'La Candelaria',         'Bogotá D.C.', 'Bogotá'),
+  ('111811', 'Rafael Uribe Uribe',    'Bogotá D.C.', 'Bogotá'),
+  ('111911', 'Ciudad Bolívar',        'Bogotá D.C.', 'Bogotá'),
+  -- Medellín (Antioquia, departamento 05)
+  ('050001', 'La Candelaria',         'Antioquia',   'Medellín'),
+  ('050010', 'Robledo',               'Antioquia',   'Medellín'),
+  ('050016', 'Castilla',              'Antioquia',   'Medellín'),
+  ('050021', 'Doce de Octubre',       'Antioquia',   'Medellín'),
+  ('050024', 'Aranjuez',              'Antioquia',   'Medellín'),
+  ('050030', 'Manrique',              'Antioquia',   'Medellín'),
+  ('050034', 'Popular',               'Antioquia',   'Medellín'),
+  ('050036', 'Santa Cruz',            'Antioquia',   'Medellín'),
+  ('050040', 'Villa Hermosa',         'Antioquia',   'Medellín'),
+  ('050043', 'Buenos Aires',          'Antioquia',   'Medellín'),
+  ('050050', 'La América',            'Antioquia',   'Medellín'),
+  ('050051', 'Laureles-Estadio',      'Antioquia',   'Medellín'),
+  ('050060', 'San Javier',            'Antioquia',   'Medellín'),
+  ('050080', 'El Poblado',            'Antioquia',   'Medellín'),
+  ('050090', 'Guayabal',              'Antioquia',   'Medellín'),
+  ('050091', 'Belén',                 'Antioquia',   'Medellín')
 ON CONFLICT (codigo_postal) DO NOTHING;
 
 INSERT INTO tarifas_incendio (clave_incendio, descripcion, tasa_base) VALUES

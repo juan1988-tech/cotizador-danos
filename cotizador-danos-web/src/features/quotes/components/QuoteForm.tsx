@@ -49,10 +49,7 @@ export const QuoteForm = ({
     setFormData(prev => ({ ...prev, [field]: value }));
     
     if (validationErrors[field]) {
-      setValidationErrors(prev => {
-        const { [field]: _, ...rest } = prev;
-        return rest;
-      });
+      setValidationErrors(prev => prev ? Object.fromEntries(Object.entries(prev).filter(([k]) => k !== field)) : prev);
     }
   };
 

@@ -17,24 +17,21 @@ export function useQuoteList(): UseQuoteListReturn {
 
   useEffect(() => {
     let cancelled = false;
-
-    setLoading(true);
-
-    setError(null);
-
-    listQuotes()
-      .then((data) => {
+    async function fetchQuotes() {
+      if (!cancelled) setLoading(true);
+      if (!cancelled) setError(null);
+      try {
+        const data = await listQuotes();
         if (!cancelled) setQuotes(data);
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Error al cargar las cotizaciones');
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
-
+      }
+    }
+    fetchQuotes();
     return () => {
       cancelled = true;
     };

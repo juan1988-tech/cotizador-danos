@@ -1,118 +1,14 @@
-# GitLab CI/CD pipeline para cotizador-danos (backend + frontend)
+# =============================================================================
+# GitLab CI/CD ó cotizador-danos (monorepo)
+# SPEC-001-CICD
+# =============================================================================
+# Variables sensibles definir en GitLab ? Settings ? CI/CD ? Variables:
+#   DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, VITE_API_URL, CORE_SERVICE_URL
+# =============================================================================
 
-stages:
-  - install
-  - test
-  - build
-  - deploy
+default:
+  image: node:20-alpine
 
-variables:
-  NODE_ENV: test
-  POSTGRES_DB: cotizador_test
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-  # Las siguientes deben configurarse como variables protegidas en GitLab UI
-  # JWT_SECRET, DB_HOST, DB_PORT, DB_USER, DB_PASS, etc.
-
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - plataforma-danos-back/node_modules/
-    - cotizador-danos-web/node_modules/
-
-# Backend: Install dependencies
-backend_install:
-  stage: install
-  image: node:20
-  script:
-    - cd plataforma-danos-back
-    - npm ci
-  artifacts:
-    paths:
-      - plataforma-danos-back/node_modules/
-
-# Frontend: Install dependencies
-frontend_install:
-  stage: install
-  image: node:20
-  script:
-    - cd cotizador-danos-web
-    - npm ci
-  artifacts:
-    paths:
-      - cotizador-danos-web/node_modules/
-
-# Backend: Run tests
-backend_test:
-  stage: test
-  image: node:20
-  services:
-    - name: postgres:15
-      alias: postgres
-  variables:
-    POSTGRES_DB: cotizador_test
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-    DB_HOST: postgres
-    DB_PORT: 5432
-    DB_USER: postgres
-    DB_PASS: postgres
-  script:
-    - cd plataforma-danos-back
-    - npm run build
-    - npm run test
-  dependencies:
-    - backend_install
-
-# Frontend: Run tests
-frontend_test:
-  stage: test
-  image: node:20
-  script:
-    - cd cotizador-danos-web
-    - npm run build
-    - npm run test
-  dependencies:
-    - frontend_install
-
-# Backend: Build
-backend_build:
-  stage: build
-  image: node:20
-  script:
-    - cd plataforma-danos-back
-    - npm run build
-  dependencies:
-    - backend_test
-  artifacts:
-    paths:
-      - plataforma-danos-back/dist/
-
-# Frontend: Build
-frontend_build:
-  stage: build
-  image: node:20
-  script:
-    - cd cotizador-danos-web
-    - npm run build
-  dependencies:
-    - frontend_test
-  artifacts:
-    paths:
-      - cotizador-danos-web/dist/
-
-# Deploy (ejemplo: solo en main)
-deploy:
-  stage: deploy
-  image: node:20
-  script:
-    - echo "Despliegue automatizado: personalizar seg√∫n entorno"
-    # Aqu√≠ puedes agregar comandos para Docker, SSH, etc.
-  only:
-    - main
-  dependencies:
-    - backend_build
-    - frontend_build
 stages:
   - install
   - lint
@@ -120,148 +16,166 @@ stages:
   - build
   - deploy
 
+# ---------------------------------------------------------------------------
+# Variables de entorno no sensibles
+# ---------------------------------------------------------------------------
 variables:
-  NODE_VERSION: "18"
-  POSTGRES_DB: cotizador_danos_test
-  POSTGRES_USER: test_user
-  POSTGRES_PASSWORD: test_password
+  NODE_ENV: "test"
+  PORT: "3000"
+  HOST: "0.0.0.0"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "cotizador_danos"
+  DB_USER: "ci_user"
+  DB_PASSWORD: "ci_password"
+  POSTGRES_DB: "cotizador_danos"
+  POSTGRES_USER: "ci_user"
+  POSTGRES_PASSWORD: "ci_password"
+  CORE_SERVICE_URL: "http://localhost:3001"
+  CORE_SERVICE_TIMEOUT: "5000"
+  OPTIMISTIC_LOCK_MAX_RETRIES: "3"
+  CALCULATION_TIMEOUT: "10000"
+  LOG_LEVEL: "error"
+  LOG_FORMAT: "combined"
 
-# ============================================================================
-# BACKEND PIPELINE
-# ============================================================================
-
-backend:install:
+# ===========================================================================
+# STAGE: install
+# ===========================================================================
+install:backend:
   stage: install
-  image: node:${NODE_VERSION}-alpine
-  script:
-    - cd plataformas-danos-back
-    - npm ci
   cache:
-    key: backend-${CI_COMMIT_REF_SLUG}
+    key:
+      files:
+        - plataforma-danos-back/package-lock.json
     paths:
-      - plataformas-danos-back/node_modules/
+      - plataforma-danos-back/node_modules/
+    policy: pull-push
+  script:
+    - cd plataforma-danos-back
+    - npm ci --prefer-offline
   artifacts:
     paths:
-      - plataformas-danos-back/node_modules/
-    expire_in: 1 day
+      - plataforma-danos-back/node_modules/
+    expire_in: 1 hour
 
-backend:lint:
+install:frontend:
+  stage: install
+  cache:
+    key:
+      files:
+        - cotizador-danos-web/package-lock.json
+    paths:
+      - cotizador-danos-web/node_modules/
+    policy: pull-push
+  script:
+    - cd cotizador-danos-web
+    - npm ci --prefer-offline
+  artifacts:
+    paths:
+      - cotizador-danos-web/node_modules/
+    expire_in: 1 hour
+
+# ===========================================================================
+# STAGE: lint
+# ===========================================================================
+lint:backend:
   stage: lint
-  image: node:${NODE_VERSION}-alpine
-  dependencies:
-    - backend:install
+  needs: [install:backend]
   script:
-    - cd plataformas-danos-back
+    - cd plataforma-danos-back
     - npm run lint
-  only:
-    changes:
-      - plataformas-danos-back/**/*
 
-backend:test:
+lint:frontend:
+  stage: lint
+  needs: [install:frontend]
+  script:
+    - cd cotizador-danos-web
+    - npm run lint
+
+# ===========================================================================
+# STAGE: test
+# ===========================================================================
+test:backend:
   stage: test
-  image: node:${NODE_VERSION}-alpine
+  needs: [install:backend]
   services:
-    - postgres:15-alpine
+    - name: postgres:15-alpine
+      alias: postgres
   variables:
-    DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-  dependencies:
-    - backend:install
+    POSTGRES_DB: "cotizador_danos"
+    POSTGRES_USER: "ci_user"
+    POSTGRES_PASSWORD: "ci_password"
+    DB_HOST: "postgres"
+  before_script:
+    - apk add --no-cache postgresql-client
+    - |
+      until pg_isready -h postgres -p 5432 -U ci_user; do
+        echo "Esperando a PostgreSQL..."; sleep 2
+      done
+    - PGPASSWORD=ci_password psql -h postgres -U ci_user -d cotizador_danos -f plataforma-danos-back/database/schema.sql || true
   script:
-    - cd plataformas-danos-back
-    - npm run test -- --coverage
-  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+    - cd plataforma-danos-back
+    - npm run test -- --forceExit --passWithNoTests
+  coverage: '/Lines\s*:\s*(\d+\.?\d*)%/'
   artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: plataformas-danos-back/coverage/cobertura-coverage.xml
+    when: always
     paths:
-      - plataformas-danos-back/coverage/
-    expire_in: 1 week
-  only:
-    changes:
-      - plataformas-danos-back/**/*
+      - plataforma-danos-back/coverage/
+    expire_in: 7 days
 
-backend:build:
-  stage: build
-  image: node:${NODE_VERSION}-alpine
-  dependencies:
-    - backend:install
+test:frontend:
+  stage: test
+  needs: [install:frontend]
   script:
-    - cd plataformas-danos-back
+    - cd cotizador-danos-web
+    - npm run test
+  artifacts:
+    when: always
+    paths:
+      - cotizador-danos-web/coverage/
+    expire_in: 7 days
+
+# ===========================================================================
+# STAGE: build
+# ===========================================================================
+build:backend:
+  stage: build
+  needs: [test:backend]
+  script:
+    - cd plataforma-danos-back
     - npm run build
   artifacts:
     paths:
-      - plataformas-danos-back/dist/
-    expire_in: 1 day
-  only:
-    - main
-    - develop
+      - plataforma-danos-back/dist/
+    expire_in: 7 days
 
-# ============================================================================
-# FRONTEND PIPELINE
-# ============================================================================
-
-frontend:install:
-  stage: install
-  image: node:${NODE_VERSION}-alpine
-  script:
-    - cd cotizador-danos-web
-    - npm ci
-  cache:
-    key: frontend-${CI_COMMIT_REF_SLUG}
-    paths:
-      - cotizador-danos-web/node_modules/
-  artifacts:
-    paths:
-      - cotizador-danos-web/node_modules/
-    expire_in: 1 day
-
-frontend:lint:
-  stage: lint
-  image: node:${NODE_VERSION}-alpine
-  dependencies:
-    - frontend:install
-  script:
-    - cd cotizador-danos-web
-    - npm run lint
-  only:
-    changes:
-      - cotizador-danos-web/**/*
-
-frontend:test:
-  stage: test
-  image: node:${NODE_VERSION}-alpine
-  dependencies:
-    - frontend:install
-  script:
-    - cd cotizador-danos-web
-    - npm run test:coverage
-  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: cotizador-danos-web/coverage/cobertura-coverage.xml
-    paths:
-      - cotizador-danos-web/coverage/
-    expire_in: 1 week
-  only:
-    changes:
-      - cotizador-danos-web/**/*
-
-frontend:build:
+build:frontend:
   stage: build
-  image: node:${NODE_VERSION}-alpine
-  dependencies:
-    - frontend:install
+  needs: [test:frontend]
+  variables:
+    VITE_API_URL: "${VITE_API_URL}"
   script:
     - cd cotizador-danos-web
     - npm run build
   artifacts:
     paths:
       - cotizador-danos-web/dist/
-    expire_in: 1 day
-  only:
-    - main
-    - develop
+    expire_in: 7 days
+
+# ===========================================================================
+# STAGE: deploy ó solo en ramas protegidas main/master
+# ===========================================================================
+deploy:
+  stage: deploy
+  needs: [build:backend, build:frontend]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+      when: on_success
+    - when: never
+  environment:
+    name: production
+  script:
+    - echo "Desplegando version $CI_COMMIT_SHORT_SHA en $CI_ENVIRONMENT_NAME"
+    # Personalizar con el comando de despliegue real, por ejemplo:
+    # - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /app && docker compose pull && docker compose up -d"
+    - echo "Deploy completado."

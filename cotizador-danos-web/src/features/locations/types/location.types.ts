@@ -1,9 +1,7 @@
-// ─── Validation state ────────────────────────────────────────────────────────
 export type ValidationState = 'COMPLETA' | 'INCOMPLETA';
 
 export type AlertSeverity = 'ERROR' | 'WARNING' | 'INFO';
 
-// ─── GiroInfo ─────────────────────────────────────────────────────────────────
 export interface GiroInfo {
   claveGiro: string;
   descripcion: string;
@@ -11,7 +9,6 @@ export interface GiroInfo {
   categoria?: string;
 }
 
-// ─── Guarantee ───────────────────────────────────────────────────────────────
 export interface Guarantee {
   clave: string;
   descripcion: string;
@@ -19,20 +16,18 @@ export interface Guarantee {
   deducible?: number;
 }
 
-// ─── GarantiaResumen ─────────────────────────────────────────────────────────
 export interface GarantiaResumen {
   tipoGarantia: string;
   sumaAsegurada: number;
 }
 
-// ─── LocationAlert ───────────────────────────────────────────────────────────
+
 export interface LocationAlert {
   tipo: string;
   mensaje: string;
   severidad: AlertSeverity;
 }
 
-// ─── Location model ──────────────────────────────────────────────────────────
 export interface Location {
   id?: number;
   numeroFolio: string;
@@ -59,7 +54,6 @@ export interface Location {
   version?: number;
 }
 
-// ─── UbicacionResumen ─────────────────────────────────────────────────────────
 export interface UbicacionResumen {
   indiceUbicacion: number;
   descripcion: string | null;
@@ -71,7 +65,6 @@ export interface UbicacionResumen {
   version: number;
 }
 
-// ─── API Request/Response types ──────────────────────────────────────────────
 export interface GetLocationsResponse {
   data: {
     ubicaciones: UbicacionResumen[];

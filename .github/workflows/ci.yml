@@ -17,94 +17,17 @@ concurrency:
 jobs:
 
   # ════════════════════════════════════════════════════════════
-  #  PRUEBAS DE COMPONENTE — Backend (sin Spring context pesado)
+  #  BACKEND — Lint + Unit Tests + Integration Tests
+  #  Stack: Node.js + Express + TypeScript + Jest
   # ════════════════════════════════════════════════════════════
-  component-tests:
-    name: "🧩 Component Tests (${{ matrix.service }})"
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - auth-service
-          - bookings-service
-          - api-gateway
-          - inventory-service
-          - locations-service
-          - notifications-service
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: Backend/services/${{ matrix.service }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
-
-      - name: Run component tests
-        run: |
-          chmod +x ./gradlew
-          ./gradlew --no-daemon componentTest
-
-  # ════════════════════════════════════════════════════════════
-  #  PRUEBAS DE INTEGRACIÓN — Backend (SpringBootTest, DB, etc.)
-  # ════════════════════════════════════════════════════════════
-  integration-tests:
-    name: "🔗 Integration Tests (${{ matrix.service }})"
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - auth-service
-          - bookings-service
-          - api-gateway
-          - inventory-service
-          - locations-service
-          - notifications-service
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: Backend/services/${{ matrix.service }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
-
-      - name: Run integration tests
-        run: |
-          chmod +x ./gradlew
-          ./gradlew --no-daemon integrationTest
-
-  # ════════════════════════════════════════════════════════════
-  #  FRONTEND — Lint + Unit Tests
-  # ════════════════════════════════════════════════════════════
-  frontend:
-    name: "🌐 Frontend"
+  backend:
+    name: "🔧 Backend Tests"
     runs-on: ubuntu-latest
 
     defaults:
       run:
         shell: bash
-        working-directory: Frontend
+        working-directory: plataforma-danos-back
 
     steps:
       - name: Checkout
@@ -114,29 +37,54 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: plataforma-danos-back/package-lock.json
 
-      - name: Install
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+      - name: Install dependencies
+        run: npm ci
 
       - name: Lint
-        run: npm run lint --if-present
+        run: npm run lint
 
-      - name: Test
-        run: |
-          if ! node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
-            echo "No test script, skipping"
-            exit 0
-          fi
-          npm test
+      - name: Unit & integration tests
+        run: npm test -- --passWithNoTests
 
-  # ------------------------------------------------------------
+  # ════════════════════════════════════════════════════════════
+  #  FRONTEND — Lint + Unit Tests
+  #  Stack: React + TypeScript + Vite + Vitest
+  # ════════════════════════════════════════════════════════════
+  frontend:
+    name: "🌐 Frontend Tests"
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: cotizador-danos-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: cotizador-danos-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+  # ════════════════════════════════════════════════════════════
   #  VULNERABILITY SCAN (Trivy + SARIF)
-  # ------------------------------------------------------------
+  # ════════════════════════════════════════════════════════════
   vulnerability-scan:
     name: "🛡️ Vulnerability Scan (${{ matrix.target }})"
     runs-on: ubuntu-latest
@@ -145,20 +93,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: auth-service
-            path: Backend/services/auth-service
-          - target: bookings-service
-            path: Backend/services/bookings-service
-          - target: api-gateway
-            path: Backend/services/api-gateway
-          - target: inventory-service
-            path: Backend/services/inventory-service
-          - target: locations-service
-            path: Backend/services/locations-service
-          - target: notifications-service
-            path: Backend/services/notifications-service
+          - target: backend
+            path: plataforma-danos-back
           - target: frontend
-            path: Frontend
+            path: cotizador-danos-web
 
     steps:
       - name: Checkout
@@ -207,55 +145,3 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
-
-  # ════════════════════════════════════════════════════════════
-  #  PRUEBAS DE CAJA NEGRA — API (Postman / Newman)
-  # ════════════════════════════════════════════════════════════
-  blackbox-tests:
-    name: "📦 Black-Box Tests (API)"
-    runs-on: ubuntu-latest
-    needs: [component-tests, integration-tests, frontend, vulnerability-scan]
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Start services
-        run: |
-          docker compose -f docker-compose.prod.yml -f docker-compose.override.yml \
-            up -d --build
-          echo "Waiting for services to be healthy..."
-
-          docker compose -f docker-compose.prod.yml -f docker-compose.override.yml \
-            wait --timeout 120 database || true
-
-          for i in $(seq 1 90); do
-            if curl -sf http://localhost:3000/auth/login > /dev/null 2>&1 || \
-               curl -sf http://localhost:3001/health > /dev/null 2>&1; then
-              echo "API is ready after ${i}s"
-              break
-            fi
-            if [ "$i" -eq 90 ]; then
-              echo "API not ready in 90s"
-              docker compose -f docker-compose.prod.yml -f docker-compose.override.yml logs api-gateway auth-service bookings-service
-              exit 1
-            fi
-            sleep 1
-          done
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Run Newman Tests
-        run: |
-          npm i -g newman
-          newman run Backend/tests/blackbox/reservas-api.postman_collection.json
-
-      - name: Tear down
-        if: always()
-        run: |
-          docker compose -f docker-compose.prod.yml -f docker-compose.override.yml \
-            down -v

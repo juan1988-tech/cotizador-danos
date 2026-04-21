@@ -46,7 +46,7 @@ export const QuoteForm = ({
 
   const handleChange = (field: keyof DatosAsegurado, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Limpiar error de validación al cambiar
+    
     if (validationErrors[field]) {
       setValidationErrors(prev => {
         const { [field]: _, ...rest } = prev;

@@ -108,22 +108,18 @@ export function useCalculation(): UseCalculationReturn {
       } else {
         setError(err instanceof Error ? err.message : 'Error al calcular prima');
       }
-      // Do not re-throw: error is managed via state; re-throwing causes
-      // "Uncaught (in promise)" in event handlers and unmounts test components.
     } finally {
       setLoading(false);
       isInFlight.current = false;
     }
   }, [folio, updatePrimas, updateVersion]);
 
-  // Cargar opciones al montar
   useEffect(() => {
     if (folio) {
       loadCoverageOptions();
     }
   }, [folio, loadCoverageOptions]);
 
-  // Inicializar resultado si ya existe en la cotización
   useEffect(() => {
     if (currentQuote?.primaNetaTotal !== null && currentQuote?.primaNetaTotal !== undefined) {
       setCalculationResult({

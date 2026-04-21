@@ -71,7 +71,7 @@ export function useLocations(): UseLocationsReturn {
       });
       updateLayoutConfig(result.configuracionLayout);
       updateVersion(result.version);
-      // Recargar ubicaciones
+    
       await loadLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear layout');

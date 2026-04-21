@@ -84,7 +84,6 @@ export const LocationsPage = () => {
       <div className="space-y-6">
         {error && <Alert type="danger">{error}</Alert>}
 
-        {/* Configuración de layout */}
         {!hasLayout && (
           <Card title="Configurar Layout" subtitle="Define el número y tipo de ubicaciones">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

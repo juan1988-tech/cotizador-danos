@@ -9,9 +9,6 @@ import type {
 
 const getBasePath = (folio: string) => `/api/v1/quotes/${folio}`;
 
-/**
- * Obtiene las opciones de cobertura disponibles para la cotización
- */
 export async function getCoverageOptions(
   folio: string
 ): Promise<GetCoverageOptionsResponse['data']> {
@@ -21,9 +18,6 @@ export async function getCoverageOptions(
   return response.data.data;
 }
 
-/**
- * Guarda la selección de coberturas
- */
 export async function putCoverageOptions(
   folio: string,
   data: PutCoverageOptionsRequest
@@ -35,9 +29,6 @@ export async function putCoverageOptions(
   return response.data.data;
 }
 
-/**
- * Ejecuta el cálculo de prima
- */
 export async function calculatePremium(
   folio: string,
   data: CalculateRequest

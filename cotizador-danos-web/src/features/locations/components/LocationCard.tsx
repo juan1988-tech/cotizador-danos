@@ -22,7 +22,7 @@ export const LocationCard = ({ location, onEdit, className = '' }: LocationCardP
       } ${className}`}
     >
       {/* Header */}
-      <div
+      <header
         className={`flex items-center justify-between rounded-t-lg px-4 py-3 ${
           isComplete ? 'bg-green-50' : 'bg-yellow-50'
         }`}
@@ -57,10 +57,10 @@ export const LocationCard = ({ location, onEdit, className = '' }: LocationCardP
             </Button>
           )}
         </div>
-      </div>
+      </header>
 
       {/* Body */}
-      <div className="px-4 py-3 space-y-2">
+      <main className="px-4 py-3 space-y-2">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-slate-500 text-xs block">Código Postal</span>
@@ -101,7 +101,7 @@ export const LocationCard = ({ location, onEdit, className = '' }: LocationCardP
             </ul>
           </Alert>
         )}
-      </div>
+      </main>
     </div>
   );
 };

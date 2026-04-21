@@ -55,7 +55,7 @@ export const QuoteProgress = ({ activeStepId }: QuoteProgressProps) => {
             >
               <span
                 className={[
-                  'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold',
+                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold',
                   STATUS_STYLES[status],
                 ].join(' ')}
               >
@@ -73,7 +73,7 @@ export const QuoteProgress = ({ activeStepId }: QuoteProgressProps) => {
             {index < QUOTE_STEPS.length - 1 && (
               <div
                 className={[
-                  'ml-[22px] h-6 w-0.5',
+                  'ml-5.5 h-6 w-0.5',
                   step.order < activeOrder ? 'bg-green-400' : 'bg-slate-200',
                 ].join(' ')}
                 aria-hidden="true"

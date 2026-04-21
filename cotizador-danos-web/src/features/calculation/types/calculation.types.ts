@@ -1,5 +1,3 @@
-// ─── Premium Calculation Types ───────────────────────────────────────────────
-
 export interface LocationPremium {
   indiceUbicacion: number;
   primaNeta: number;
@@ -14,7 +12,6 @@ export interface PremiumCalculationResult {
   ubicacionesExcluidas: number[];
 }
 
-// ─── API Request/Response types ──────────────────────────────────────────────
 export interface CalculateRequest {
   version: number;
 }

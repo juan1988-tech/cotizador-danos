@@ -207,7 +207,7 @@ describe('POST /api/v1/quotes/:folio/layout — AddLocationUseCase (layout setup
 // ── PATCH /api/v1/quotes/:folio/locations/:index ──────────────────────────────
 
 describe('PATCH /api/v1/quotes/:folio/locations/:index — AddLocationUseCase (location detail)', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => jest.resetAllMocks());
 
   it('given_valid_patch_when_PATCH_location_then_returns_200_with_COMPLETA_state', async () => {
     // GIVEN

@@ -11,9 +11,6 @@ import type {
 
 const getBasePath = (folio: string) => `/api/v1/quotes/${folio}`;
 
-/**
- * Configura el layout de ubicaciones (número y tipo)
- */
 export async function postLayout(
   folio: string,
   data: PostLayoutRequest
@@ -25,9 +22,6 @@ export async function postLayout(
   return response.data.data;
 }
 
-/**
- * Obtiene el listado de ubicaciones de una cotización
- */
 export async function getLocations(folio: string): Promise<UbicacionResumen[]> {
   const response = await apiClient.get<GetLocationsResponse>(
     `${getBasePath(folio)}/locations`
@@ -35,9 +29,6 @@ export async function getLocations(folio: string): Promise<UbicacionResumen[]> {
   return response.data.data.ubicaciones;
 }
 
-/**
- * Actualiza múltiples ubicaciones de una cotización
- */
 export async function putLocations(
   folio: string,
   data: PutLocationsRequest
@@ -45,9 +36,6 @@ export async function putLocations(
   await apiClient.put(`${getBasePath(folio)}/locations`, data);
 }
 
-/**
- * Actualiza una ubicación individual por índice
- */
 export async function patchLocation(
   folio: string,
   index: number,

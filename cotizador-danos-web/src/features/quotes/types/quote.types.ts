@@ -109,12 +109,17 @@ export interface PatchGeneralDataResponse {
   };
 }
 
-// ─── QuoteListItem ───────────────────────────────────────────────────────────
-export interface QuoteListItem {
+// ─── QuoteSummary ─────────────────────────────────────────────────────────────
+export interface QuoteSummary {
   numeroFolio: string;
   estadoCotizacion: QuoteState;
-  nombreAsegurado?: string;
+  nombreAsegurado: string | null;
+  primaNetaTotal: number | null;
   fechaCreacion: string;
   fechaUltimaActualizacion: string;
+}
+
+export interface ListQuotesResponse {
+  data: QuoteSummary[];
 }
 

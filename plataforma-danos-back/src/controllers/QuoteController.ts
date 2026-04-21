@@ -13,6 +13,21 @@ import {
 import { isGeneralDataComplete, advanceEstado } from '../utils/helpers';
 import { PremiumService } from '../services/PremiumService';
 
+// ── GET /quotes ───────────────────────────────────────────────────────────────
+export async function listQuotes(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const repo = new QuoteRepository(pool);
+    const summaries = await repo.findAll();
+    res.status(200).json({ data: summaries });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ── POST /quotes ──────────────────────────────────────────────────────────────
 export async function postQuote(
   _req: Request,

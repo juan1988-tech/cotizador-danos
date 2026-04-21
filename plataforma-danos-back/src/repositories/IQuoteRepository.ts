@@ -3,6 +3,16 @@ import { Quote } from '../models/Quote';
 // ─── Minimal input type for creating a new quote ──────────────────────────────
 export type NewQuote = Pick<Quote, 'numeroFolio'>;
 
+// ─── Summary projection returned by findAll ──────────────────────────────────
+export interface QuoteSummary {
+  numeroFolio: string;
+  estadoCotizacion: Quote['estadoCotizacion'];
+  nombreAsegurado: string | null;
+  primaNetaTotal: number | null;
+  fechaCreacion: string;
+  fechaUltimaActualizacion: string;
+}
+
 // ─── Transaction scope exposed to callers ────────────────────────────────────
 // Bundles a transaction-scoped IQuoteRepository with a raw query executor
 // so cross-table operations (e.g. locations) can run in the same transaction
@@ -14,6 +24,12 @@ export interface TransactionScope {
 
 // ─── IQuoteRepository ────────────────────────────────────────────────────────
 export interface IQuoteRepository {
+  /**
+   * Returns all quotes as summary projections, ordered by
+   * fecha_ultima_actualizacion descending.
+   */
+  findAll(): Promise<QuoteSummary[]>;
+
   /**
    * Returns the quote for the given folio, or null if it does not exist.
    */

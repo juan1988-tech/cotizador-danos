@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  listQuotes,
   postQuote,
   getQuote,
   patchGeneralData,
@@ -16,6 +17,9 @@ import {
 } from '../middlewares/validateRequest';
 
 const router = Router();
+
+// GET /quotes — list all quotes as summary projections
+router.get('/', listQuotes);
 
 // POST /quotes — initiate a new quote (no body required)
 router.post('/', postQuote);

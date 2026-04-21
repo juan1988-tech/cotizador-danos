@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
-import { IQuoteRepository, NewQuote, TransactionScope } from './IQuoteRepository';
+import { IQuoteRepository, NewQuote, QuoteSummary, TransactionScope } from './IQuoteRepository';
 import {
   Quote,
   QuoteState,
@@ -29,6 +29,35 @@ const QUOTE_COLUMNS = `
 
 export class QuoteRepository implements IQuoteRepository {
   constructor(private readonly db: PgExecutor) {}
+
+  async findAll(): Promise<QuoteSummary[]> {
+    const sql = `
+      SELECT
+        numero_folio,
+        estado_cotizacion,
+        datos_asegurado->>'nombreAsegurado' AS nombre_asegurado,
+        CASE WHEN primas_por_ubicacion IS NOT NULL
+             THEN (
+               SELECT SUM((elem->>'primaNeta')::numeric)
+               FROM jsonb_array_elements(primas_por_ubicacion) AS elem
+             )
+             ELSE NULL
+        END AS prima_neta_total,
+        fecha_creacion,
+        fecha_ultima_actualizacion
+      FROM quotes
+      ORDER BY fecha_ultima_actualizacion DESC
+    `;
+    const result = await this.db.query(sql);
+    return (result.rows as Record<string, unknown>[]).map((row) => ({
+      numeroFolio: row['numero_folio'] as string,
+      estadoCotizacion: row['estado_cotizacion'] as QuoteSummary['estadoCotizacion'],
+      nombreAsegurado: (row['nombre_asegurado'] as string | null) ?? null,
+      primaNetaTotal: row['prima_neta_total'] != null ? Number(row['prima_neta_total']) : null,
+      fechaCreacion: (row['fecha_creacion'] as Date).toISOString(),
+      fechaUltimaActualizacion: (row['fecha_ultima_actualizacion'] as Date).toISOString(),
+    }));
+  }
 
   async findByFolio(folio: string): Promise<Quote | null> {
     const sql = `

@@ -1,9 +1,11 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { PageLayout } from '../../../shared/components/templates/PageLayout';
 import { Card } from '../../../shared/components/molecules/Card';
 import { Alert } from '../../../shared/components/atoms/Alert';
 import { PremiumResults } from '../../calculation/components/PremiumResults';
 import { useQuoteStore } from '../../../store/quoteStore';
+import { Button } from '../../../shared/components/atoms/Button';
+
 
 export const TermsPage = () => {
   const { folio } = useParams<{ folio: string }>();
@@ -97,6 +99,10 @@ export const TermsPage = () => {
               <p className="text-sm text-slate-500">
                 La cotización <strong>{folio}</strong> ha sido calculada correctamente.
               </p>
+              <Link to="/cotizador">
+                <Button>Emitir Cotización</Button>
+              </Link>
+
             </div>
           </Card>
         )}

@@ -2,9 +2,11 @@ import { apiClient } from '../../../shared/services/apiClient';
 import type {
   CreateQuoteResponse,
   GetQuoteResponse,
+  ListQuotesResponse,
   PatchGeneralDataRequest,
   PatchGeneralDataResponse,
   Quote,
+  QuoteSummary,
 } from '../types/quote.types';
 
 const BASE_PATH = '/api/v1/quotes';
@@ -48,10 +50,9 @@ export async function patchGeneralData(
 }
 
 /**
- * Lista todas las cotizaciones (para la página de listado)
- * Nota: Este endpoint puede no existir aún en el backend
+ * Lista todas las cotizaciones como resumen (proyección ligera)
  */
-export async function listQuotes(): Promise<Quote[]> {
-  const response = await apiClient.get<{ data: Quote[] }>(BASE_PATH);
+export async function listQuotes(): Promise<QuoteSummary[]> {
+  const response = await apiClient.get<ListQuotesResponse>(BASE_PATH);
   return response.data.data;
 }

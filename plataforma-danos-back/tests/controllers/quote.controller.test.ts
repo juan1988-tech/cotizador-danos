@@ -7,6 +7,7 @@ jest.mock('../../src/config/database', () => ({
 import { Request, Response, NextFunction } from 'express';
 import { pool } from '../../src/config/database';
 import {
+  listQuotes,
   postQuote,
   getQuote,
   patchGeneralData,
@@ -54,6 +55,80 @@ describe('QuoteController', () => {
   beforeEach(() => {
     next = jest.fn();
     jest.clearAllMocks();
+  });
+
+  // ── listQuotes ────────────────────────────────────────────────────────────
+
+  describe('listQuotes', () => {
+    const SUMMARY_ROW = {
+      numero_folio: FOLIO,
+      estado_cotizacion: 'EN_EDICION',
+      nombre_asegurado: 'Juan Pérez',
+      prima_neta_total: '1500.00',
+      fecha_creacion: NOW,
+      fecha_ultima_actualizacion: NOW,
+    };
+
+    it('given_listQuotes_when_db_returns_rows_then_responds_200_with_summary_array', async () => {
+      (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [SUMMARY_ROW] });
+
+      const req = buildReq();
+      const res = buildRes();
+
+      await listQuotes(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = (res.json as jest.Mock).mock.calls[0][0] as { data: unknown[] };
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data).toHaveLength(1);
+      const item = body.data[0] as Record<string, unknown>;
+      expect(item['numeroFolio']).toBe(FOLIO);
+      expect(item['estadoCotizacion']).toBe('EN_EDICION');
+      expect(item['nombreAsegurado']).toBe('Juan Pérez');
+      expect(item['primaNetaTotal']).toBe(1500);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('given_listQuotes_when_db_returns_empty_then_responds_200_with_empty_array', async () => {
+      (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
+      const req = buildReq();
+      const res = buildRes();
+
+      await listQuotes(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = (res.json as jest.Mock).mock.calls[0][0] as { data: unknown[] };
+      expect(body.data).toHaveLength(0);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('given_listQuotes_when_nombre_asegurado_is_null_then_field_is_null', async () => {
+      (pool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [{ ...SUMMARY_ROW, nombre_asegurado: null, prima_neta_total: null }],
+      });
+
+      const req = buildReq();
+      const res = buildRes();
+
+      await listQuotes(req, res, next);
+
+      const body = (res.json as jest.Mock).mock.calls[0][0] as { data: Record<string, unknown>[] };
+      expect(body.data[0]?.['nombreAsegurado']).toBeNull();
+      expect(body.data[0]?.['primaNetaTotal']).toBeNull();
+    });
+
+    it('given_listQuotes_when_db_throws_then_calls_next_with_error', async () => {
+      (pool.query as jest.Mock).mockRejectedValueOnce(new Error('DB down'));
+
+      const req = buildReq();
+      const res = buildRes();
+
+      await listQuotes(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect((next.mock.calls[0][0] as unknown as Error).message).toBe('DB down');
+    });
   });
 
   // ── postQuote ──────────────────────────────────────────────────────────────
@@ -167,39 +242,39 @@ describe('QuoteController', () => {
 
   // ── stubs still pending ───────────────────────────────────────────────────
 
-  it('given_getCoverageOptions_when_invoked_then_calls_next_with_not_implemented_error', async () => {
+  it('given_getCoverageOptions_when_folio_not_found_then_calls_next_with_QuoteNotFoundError', async () => {
+    (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
     const req = buildReq({ folio: FOLIO }) as Request<{ folio: string }>;
     const res = buildRes();
 
     await getCoverageOptions(req, res, next);
 
-    const err = next.mock.calls[0][0] as unknown as Error;
     expect(next).toHaveBeenCalledTimes(1);
-    expect(err).toBeInstanceOf(Error);
-    expect(err.message).toBe('getCoverageOptions not yet implemented');
+    expect(next.mock.calls[0][0]).toBeInstanceOf(QuoteNotFoundError);
   });
 
-  it('given_putCoverageOptions_when_invoked_then_calls_next_with_not_implemented_error', async () => {
-    const req = buildReq({ folio: FOLIO }) as Request<{ folio: string }>;
+  it('given_putCoverageOptions_when_folio_not_found_then_calls_next_with_QuoteNotFoundError', async () => {
+    (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
+    const req = buildReq({ folio: FOLIO }, { selecciones: [] }) as Request<{ folio: string }>;
     const res = buildRes();
 
     await putCoverageOptions(req, res, next);
 
-    const err = next.mock.calls[0][0] as unknown as Error;
     expect(next).toHaveBeenCalledTimes(1);
-    expect(err).toBeInstanceOf(Error);
-    expect(err.message).toBe('putCoverageOptions not yet implemented');
+    expect(next.mock.calls[0][0]).toBeInstanceOf(QuoteNotFoundError);
   });
 
-  it('given_postCalculate_when_invoked_then_calls_next_with_not_implemented_error', async () => {
+  it('given_postCalculate_when_folio_not_found_then_calls_next_with_QuoteNotFoundError', async () => {
+    (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
     const req = buildReq({ folio: FOLIO }) as Request<{ folio: string }>;
     const res = buildRes();
 
     await postCalculate(req, res, next);
 
-    const err = next.mock.calls[0][0] as unknown as Error;
     expect(next).toHaveBeenCalledTimes(1);
-    expect(err).toBeInstanceOf(Error);
-    expect(err.message).toBe('postCalculate not yet implemented');
+    expect(next.mock.calls[0][0]).toBeInstanceOf(QuoteNotFoundError);
   });
 });

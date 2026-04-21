@@ -4,8 +4,6 @@ import { QuoteRepository } from '../repositories/QuoteRepository';
 import { DatosAsegurado, OpcionCobertura, UpdateGeneralInfoRequest } from '../models/Quote';
 import {
   InvalidQuoteStateTransitionError,
-  NoCoverageSelectedError,
-  NoValidLocationsError,
   ObligatoryCoberturaCantBeDeselectedError,
   QuoteNotFoundError,
   VersionConflictError,

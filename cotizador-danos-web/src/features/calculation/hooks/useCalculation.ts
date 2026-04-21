@@ -116,12 +116,14 @@ export function useCalculation(): UseCalculationReturn {
 
   useEffect(() => {
     if (folio) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadCoverageOptions();
     }
   }, [folio, loadCoverageOptions]);
 
   useEffect(() => {
     if (currentQuote?.primaNetaTotal !== null && currentQuote?.primaNetaTotal !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCalculationResult({
         primaNetaTotal: currentQuote.primaNetaTotal,
         primaComercialTotal: currentQuote.primaComercialTotal ?? 0,

@@ -40,6 +40,7 @@ export const QuoteForm = ({
 
   useEffect(() => {
     if (initialData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(prev => ({ ...prev, ...initialData }));
     }
   }, [initialData]);
@@ -49,7 +50,7 @@ export const QuoteForm = ({
     
     if (validationErrors[field]) {
       setValidationErrors(prev => {
-        const { [field]: _, ...rest } = prev;
+        const { [field]: _removed, ...rest } = prev;
         return rest;
       });
     }

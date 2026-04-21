@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { applyRetryInterceptor } from '../../../shared/services/queryClient';
@@ -86,7 +86,10 @@ describe('applyRetryInterceptor', () => {
   // ─── Edge Cases ────────────────────────────────────────────────────────
 
   it('rejects immediately when the error has no config object', async () => {
-    const interceptorFn = (client.interceptors.response as any).handlers.at(-1)?.rejected;
+    type InterceptorInternal = {
+      handlers: Array<{ fulfilled?: unknown; rejected?: (err: unknown) => Promise<unknown> } | null>;
+    };
+    const interceptorFn = (client.interceptors.response as unknown as InterceptorInternal).handlers.at(-1)?.rejected;
     const errorWithoutConfig = new Error('no config');
 
     if (interceptorFn) {

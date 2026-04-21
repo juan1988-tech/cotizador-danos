@@ -92,6 +92,7 @@ export function useLocations(): UseLocationsReturn {
   // Cargar ubicaciones al montar
   useEffect(() => {
     if (folio && currentQuote?.configuracionLayout) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadLocations();
     }
   }, [folio, currentQuote?.configuracionLayout, loadLocations]);

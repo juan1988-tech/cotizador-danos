@@ -48,6 +48,7 @@ export const LocationForm = ({
 
   useEffect(() => {
     if (initialData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(prev => ({
         ...prev,
         descripcion: initialData.descripcion ?? '',
@@ -66,7 +67,7 @@ export const LocationForm = ({
     setFormData(prev => ({ ...prev, [field]: value }));
     if (validationErrors[field]) {
       setValidationErrors(prev => {
-        const { [field]: _, ...rest } = prev;
+        const { [field]: _removed, ...rest } = prev;
         return rest;
       });
     }

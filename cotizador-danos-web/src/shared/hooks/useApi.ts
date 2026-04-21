@@ -54,6 +54,7 @@ export function useApi<TRes, TReq = unknown>(
 
 	useEffect(() => {
 		if (immediate) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			execute();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps

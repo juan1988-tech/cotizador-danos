@@ -1,280 +1,408 @@
-# ASSD Framework — Guía de Uso
+# Reto AI center
 
-**ASSD** (Agent Spec Software Development) es un framework de desarrollo asistido por IA que organiza el trabajo de software en cuatro fases orquestadas por agentes especializados en GitHub Copilot Chat.
+## Objetivo
 
-```
-Requerimiento → Spec → Backend → Frontend → Tests/QA
-```
+Construir una solución funcional para un cotizador de daños que permita capturar un folio, registrar información general, administrar ubicaciones de riesgo, calcular la prima neta comercial, y mostrar el resultado en una interfaz web
 
-> **Índice completo de archivos**: `docs/README.md` (en la raíz del repositorio)
+## 🎯 Resumen Ejecutivo
 
----
-
-## Requisitos
-
-| Requisito | Detalle |
-|---|---|
-| VS Code | Cualquier versión reciente |
-| GitHub Copilot Chat | Extensión instalada y activa |
-| Setting habilitado | `github.copilot.chat.codeGeneration.useInstructionFiles: true` |
-
-El archivo `.vscode/settings.json` (en la raíz del repositorio) ya configura el auto-descubrimiento de agentes, skills, prompts e instructions — no requiere configuración manual adicional. Si no existe, créalo con las rutas correspondientes a `.github/`.
+**Proyecto**: Sistema de cotización de seguros de daños  
+**Stack**: React + TypeScript + Tailwind / Node + Express + PostgreSQL  
+**Metodología**: ASSD (obligatorio)  
+**Fecha límite**: 21 de abril de 2026, 5:00 PM  
 
 ---
 
-## Onboarding: nuevo proyecto
+## Investigación y Especificación ASSD
 
-Al copiar esta carpeta `.github/` a un proyecto nuevo, completa estos archivos **en orden** antes de usar cualquier agente:
+### 🔍 Actividades principales
 
-| # | Archivo | Qué escribir |
-|---|---------|-------------|
-| 1 | `README.md` (raíz del proyecto) | Stack, arquitectura, comandos (`install`, `dev`, `test`, `build`), variables de entorno |
-| 2 | `docs/context/tech_stack_constraints.context.md` | Lenguaje, framework, base de datos, herramientas aprobadas |
-| 3 | `docs/context/project_architecture.context.md` | Capas, módulos, bounded contexts |
-| 4 | `docs/context/business_domain_dictionary.context.md` | Términos canónicos del negocio (glosario) |
-| 5 | `docs/context/definition_of_ready.context.md` + `definition_of_done.context.md` | Criterios DoR y DoD del equipo |
+#### 1. Metodología ASSD y estrategia de IA
 
-Una vez completados, los agentes tienen todo el contexto necesario para operar de forma autónoma.
+### Definición de estrategia IA
 
-**No modificar nunca**: `agents/`, `skills/`, `instructions/`, `prompts/`, `docs/lineamientos/`, `copilot-instructions.md`, `AGENTS.md`
+Para el caso de de este proyecto se adoptó la metodología **ASDD** basada en una orquestación de agentes, bajo el contexto de la propuesta oficial de **Sofka IA center**. De igual forma se generó un [plan de trabajo](/plan.md)
 
----
+A partir del repositorio oficial se obtiene la siguiente estructura
 
-## El flujo ASSD paso a paso
-
-### Paso 1 — Spec
-
-Antes de escribir una sola línea de código, genera la especificación técnica del feature.
-
-```
-@Spec Generator describeme el feature: [tu requerimiento aquí]
-```
-
-O con el prompt:
-```
-/generate-spec
-```
-
-El agente ejecuta el **pipeline GAIDD** (validación INVEST/IEEE 830 → análisis de contexto → análisis técnico QUÉ/DÓNDE/POR QUÉ) y genera el archivo en `specs/<feature>.spec.md`.
-
----
-
-### Paso 2 — Backend
-
-Con la spec aprobada, implementa la capa backend:
-
-```
-@Backend Developer implementa la spec specs/<feature>.spec.md
-```
-
-O con el prompt:
-```
-/backend-task
-```
-
-El agente sigue la arquitectura en capas del proyecto (definida en `project_architecture.context.md`) y aplica los lineamientos de `dev-guidelines.md`.
-
----
-
-### Paso 3 — Frontend
-
-Con el backend listo, implementa la interfaz:
-
-```
-@Frontend Developer implementa la spec specs/<feature>.spec.md
-```
-
-O con el prompt:
-```
-/frontend-task
-```
-
----
-
-### Paso 4 — Tests y QA
-
-Genera la suite de pruebas y la estrategia QA completa:
-
-```
-@Test Engineer genera tests para specs/<feature>.spec.md
-```
-
-O con el prompt:
-```
-/generate-tests
-```
-
-Para el flujo QA completo (estrategia + Gherkin + riesgos + automatización):
-```
-/qa-task
-```
-
----
-
-### Flujo completo en un solo comando
-
-Para orquestar las 4 fases de principio a fin:
-
-```
-@Orchestrator ejecuta el flujo completo para: [tu requerimiento]
-```
-
-O:
-```
-/full-flow
-```
-
----
-
-## Agentes disponibles (`@nombre` en Copilot Chat)
-
-| Agente | Cuándo usarlo |
-|---|---|
-| `@Orchestrator` | Coordinar el flujo completo o consultar estado (`/assd-orchestrate status`) |
-| `@Spec Generator` | Validar un requerimiento y generar su spec técnica |
-| `@Backend Developer` | Implementar un feature en la capa backend |
-| `@Frontend Developer` | Implementar un feature en la capa frontend |
-| `@Test Engineer` | Generar tests unitarios y ejecutar el flujo QA completo |
-
----
-
-## Skills disponibles (`/comando` en Copilot Chat)
-
-### ASSD Core
-| Comando | Qué hace |
-|---|---|
-| `/assd-orchestrate` | Orquesta el flujo completo o muestra el estado actual |
-| `/generate-spec` | Genera una spec técnica con pipeline GAIDD |
-| `/backend-fastapi` | Implementa un feature en backend con arquitectura en capas |
-| `/frontend-react` | Implementa un feature en frontend con componentes y hooks |
-| `/unit-testing` | Genera suite de tests unitarios (backend + frontend) |
-
-### Backend CoE
-| Comando | Qué hace |
-|---|---|
-| `/clean-code-reviewer` | Revisa código backend: SOLID, Clean Code, nomenclatura |
-| `/integration-test-generator` | Genera tests de integración para endpoints REST |
-| `/contract-test-generator` | Genera contract tests entre servicios |
-
-### Frontend CoE
-| Comando | Qué hace |
-|---|---|
-| `/component-reviewer` | Revisa componentes: SRP, separación UI/lógica, tipado |
-| `/accessibility-checker` | Verifica accesibilidad WCAG en interfaces |
-| `/ui-test-generator` | Genera tests de UI con Testing Library |
-
-### QA CoE
-| Comando | Qué hace |
-|---|---|
-| `/test-strategy-planner` | Define pirámide de testing y estrategia QA |
-| `/gherkin-case-generator` | Genera casos Given-When-Then desde criterios de aceptación |
-| `/risk-identifier` | Clasifica riesgos por nivel (Alto/Medio/Bajo) |
-| `/test-data-specifier` | Catálogo de datos de prueba sintéticos |
-| `/critical-flow-mapper` | Mapea flujos críticos para E2E y smoke tests |
-| `/regression-strategy` | Plan de regresión optimizado |
-| `/automation-flow-proposer` | Propone flujos a automatizar con estimación de ROI |
-| `/performance-analyzer` | Planifica pruebas de carga y performance |
-
----
-
-## Prompts disponibles (`/nombre` en Copilot Chat)
-
-| Comando | Cuándo usarlo |
-|---|---|
-| `/generate-spec` | Crear una nueva spec desde un requerimiento |
-| `/backend-task` | Implementar una spec en el backend |
-| `/frontend-task` | Implementar una spec en el frontend |
-| `/generate-tests` | Generar tests para una spec o módulo existente |
-| `/qa-task` | Ejecutar el flujo QA completo (8 skills secuenciales) |
-| `/full-flow` | Orquestar las 4 fases de principio a fin |
-
----
-
-## Instructions automáticas (sin intervención manual)
-
-Estos archivos se inyectan automáticamente en el contexto de Copilot cuando el archivo activo coincide con el patrón:
-
-| Archivo activo | Instructions aplicadas |
-|---|---|
-| `backend/**/*.py` (o equivalente) | `instructions/backend.instructions.md` |
-| `frontend/src/**/*.{js,jsx}` (o equivalente) | `instructions/frontend.instructions.md` |
-| `backend/tests/**` / `frontend/src/__tests__/**` | `instructions/tests.instructions.md` |
-
-> Si el proyecto usa un stack diferente, los patrones `applyTo:` de cada archivo deben ajustarse al stack real.
-
----
-
-## Lineamientos de referencia
-
-Cargados automáticamente por los agentes durante la ejecución:
-
-| Documento | Contenido |
-|---|---|
-| `docs/lineamientos/dev-guidelines.md` | Clean Code, SOLID, API REST, Seguridad, Observabilidad, Testing (LIN-DEV-001…013) |
-| `docs/lineamientos/qa-guidelines.md` | Estrategia QA, Gherkin, Riesgos, Automatización, Performance |
-| `docs/lineamientos/guidelines.md` | Referencia rápida de estándares: código, tests, API, Git, pipeline |
-
----
-
-## Estructura de carpetas
-
-```
+```file
 .github/
 ├── README.md                        ← este archivo
 ├── AGENTS.md                        ← reglas críticas para todos los agentes
 ├── copilot-instructions.md          ← siempre activo en Copilot Chat
 │
-├── agents/                          ← 5 agentes (@nombre en Copilot Chat)
-│   ├── orchestrator.agent.md
-│   ├── spec-generator.agent.md
-│   ├── backend-developer.agent.md
-│   ├── frontend-developer.agent.md
-│   └── test-engineer.agent.md
+├── agents/                          ← Conjunto que usan modelos LLM para la ejecución de instrucciones complejas 
 │
-├── skills/                          ← 19 skills (/comando en Copilot Chat)
-│   ├── assd-orchestrate/
-│   ├── generate-spec/
-│   ├── backend-fastapi/
-│   ├── frontend-react/
-│   ├── unit-testing/
-│   └── [14 skills CoE más...]
+├── skills/                          ← Set de instrucciones para dotar al modelo de capacidades especificas
 │
-├── prompts/                         ← 6 prompts (/nombre en Copilot Chat)
-│   ├── generate-spec.prompt.md
-│   ├── backend-task.prompt.md
-│   ├── frontend-task.prompt.md
-│   ├── generate-tests.prompt.md
-│   ├── qa-task.prompt.md
-│   └── full-flow.prompt.md
+├── prompts/                         ← Prompts customizados para la elaboración de procesos recurrentes
 │
-├── instructions/                    ← se aplican automáticamente por contexto de archivo
-│   ├── backend.instructions.md
-│   ├── frontend.instructions.md
-│   └── tests.instructions.md
+├── instructions/                    ← Instrucciones de alto nivel que ayudan al modelo a tomar mejores desiciones
 │
-├── specs/                           ← specs generadas por @Spec Generator
-│   └── <feature>.spec.md
-│
-└── docs/
-    ├── lineamientos/                ← lineamientos CoE (no modificar)
-    │   ├── dev-guidelines.md
-    │   ├── qa-guidelines.md
-    │   └── guidelines.md
-    └── context/                     ← archivos de contexto del proyecto (completar por proyecto)
-        ├── tech_stack_constraints.context.md
-        ├── project_architecture.context.md
-        ├── business_domain_dictionary.context.md
-        ├── definition_of_ready.context.md
-        └── definition_of_done.context.md
+├── specs/                           ← documentos de especificación ténica orientados a guiar el desarrollo
+│   
+└── docs/                            ← documentos definitorios de las limitaciones y alcance de los modelos
 ```
 
----
+#### 2. Análisis del dominio de negocio
 
-## Reglas de Oro
+## Reglas de negocio críticas
 
-Rigen todas las interacciones de los agentes con el código:
+La implementación debe respetar las siguientes reglas
 
-1. **No código no autorizado** — los agentes no generan ni modifican código sin instrucción explícita del usuario.
-2. **No suposiciones** — si el requerimiento es ambiguo, el agente pregunta antes de actuar.
-3. **Transparencia** — el agente explica qué va a hacer antes de hacerlo.
-4. **No implementar sin spec** — siempre debe existir una spec aprobada en `specs/` antes de cualquier desarrollo.
+- la cotización se identifica por **numeroFolio**
+- el backend debe persistir la cotización como agregado principal
+- las escrituras deben hacerse por actualización parcial
+- al editar secciones funcionales, debe incrementarse la **versión**
+- debe actualizarse **fechaUltimaActualizacion**
+- el calculo debe guardar **primaNeta, primaComercial y primasPorUbicacion** en una misma operación lógica
+- si una ubicación está incompleta, esta ubicación genera alerta, pero no debe impedir calcular las demás
+- una ubicación no debe calcularse si no tiene código postal válido,**giro.claveIncendio** o garantías tarifables
+
+### Dominio mínimo esperado
+
+#### Cotización
+
+La cotización debe contemplar, como mínimo:
+
+- numeroFolio
+- estadoCotizacion
+- datosAsegurado
+- datos Conduccion.código Agente
+- clasificacionRiesgo
+- tipoNegocio
+- configuracionLayout
+- opcionesCobertura
+- ubicaciones[]
+- primaNeta
+- primaComercial
+- primasPorUbicacion[]
+- versión
+- metadato
+
+Cada ubicación debe incluir al menos:
+
+- índice
+- nombreUbicacion
+- direccion
+- codigoPostal
+- estado
+- municipio
+- colonia
+- ciudad
+- tipoConstructivo
+- nivel
+- anioConstruccion
+- giro
+- giro.claveIncendio
+- garantías[]
+- zonaCatastrofica
+- alertasBloqueantes
+- estadoValidacion
+
+#### Integración con servicios de referencia
+
+El backend debe consumir o simular las siguientes capacidades del servicio core:
+
+- catálogo de suscriptores
+- consulta de agente por clave
+- consulta de giros
+- validación y consulta de código postal
+- generación secuencial de folio
+- consulta de catálogos de clasificación de riesgo y garantías
+- consulta de tarifas y factores técnicos
+
+--
+
+#### 3. SPECS (con apoyo de IA)
+
+Los SPECS  son documentos estructurados que definen exactamente qué debe hacer el software. A diferencia de la documentación tradicional, en esta metodología son legibles por máquinas, permitiendo que agentes de IA generen el código directamente a partir de ellos.
+
+Para el cumplimiento de esta prueba técnica se han comtemplado 6 SPECS, las cuales son la **fuente de la verdad** que guían toda desición ténica implementada en el desarrollo de esta prueba
+
+
+| **SPEC** | **Descripción** | **Link** |
+| :--- | :--- | :--- |
+| **Arquitectura de Alto Nivel** | Guía las decisiones del modelo a partir de la definición de registros de decisiones arquitectónicas (ADRs). | [Arquitectura de Alto Nivel](#) |
+| **Modelo de Datos** | Conjunto de especificaciones para el modelo de datos, considerando las restricciones y validaciones propias de PostgreSQL. | [Modelo de Datos](#) |
+| **Reglas de Negocio** | Especificaciones para el cumplimiento de las reglas planteadas: creación de folio, persistencia y cálculo de prima neta, comercial y por ubicación. | [Reglas de Negocio](#) |
+| **API** | Conjunto de especificaciones para la conexión de la API CRUD con un tipado fuerte en TypeScript. | [Reglas de API](#) |
+| **SPEC de Pruebas** | Establece la pirámide de testing, herramientas por capa, catálogo de casos de prueba y métricas de cobertura esperadas. | [SPEC de Pruebas](#) |
+
+
+## Diseño de Arquitectura
+
+### Reglas para el backend
+
+- Crear folios con idempotencia
+- Consultar y guardar datos generales de una cotización
+- Consultar y guardar la configuración del Layout de ubicaciones
+- Registrar, consultar y editar ubicaciones
+- Consultar el estado de la cotización
+- Consultar guardado y opciones de cobertura
+- Ejecutar el guardado de la prima neta y prima comercial
+- Persistir el resultado financiero sin sobreescribir otras opciones de cotización
+- Manejar versionado optimista en operaciones de edició
+
+### Arquitectura Backend
+
+**Enfoque**: Arquitectura de Modelo Vista Controlador (MVC) con **Express** para efectuar la interacción con la API, **Node.js** para configurar el servidor y **Typescript** para un tipado fuerte en el backend
+
+```typescript
+plataformas-danos-back/
+├── src/
+│   ├── controllers/           # Lógica de control (Recibe req, llama al modelo, responde)
+│   │   ├── QuoteController.ts
+│   │   ├── LocationController.ts
+│   │   └── CatalogController.ts
+│   │
+│   ├── models/                # Definición de datos y lógica de negocio (Entidades/Esquemas)
+│   │   ├── Quote.ts
+│   │   ├── Location.ts
+│   │   ├── Coverage.ts
+│   │   └── User.ts
+│   │
+│   ├── routes/                # Definición de endpoints
+│   │   ├── quoteRoutes.ts
+│   │   ├── locationRoutes.ts
+│   │   └── index.ts           # Agregador de rutas
+│   │
+│   ├── services/              # (Opcional) Lógica pesada o cálculos (ej. calculo de prima)
+│   │   ├── PremiumService.ts
+│   │   └── ExternalCoreService.ts
+│   │
+│   ├── middlewares/           # Validaciones, Auth, Error Handler
+│   │   ├── errorHandler.ts
+│   │   └── validateRequest.ts
+│   │
+│   ├── config/                # Configuración de BD y variables de entorno
+│   │   └── database.ts
+│   │
+│   └── utils/                 # Funciones de ayuda y constantes
+│       └── helpers.ts
+│
+├── tests/
+├── .env
+├── package.json
+└── tsconfig.json
+```
+
+### Reglas para el Frontend
+
+Implementar una SPA que permita:
+
+- crear o abrir un folio
+- capturar datos generales
+- consultar suscriptores, agentes, giros y códigos postales
+- capturar una o varias ubicaciones
+- editar una ubicación puntual
+- visualizar el progreso y estado del folio
+- configurar opciones de cobertura
+- ejecutar el cálculo
+- mostrar la prima neta, la prima comercial y el desglose por ubicación
+- mostrar alertas de ubicaciones incompletas sin bloquear completamente el foli
+
+### Arquitectura Frontend
+
+**Enfoque**: Arquitectura basada en diseño atómico con, usando **React** como framework de desarrollo web **Typescript** para tipado y escritura de componentes y lógica de componentes, y **Tailwind** cómo framework de estilos de CSS
+
+```typescript
+cotizador-danos-web/
+├── src/
+│   ├── features/                  # Módulos por funcionalidad
+│   │   ├── quotes/
+│   │   │   ├── components/
+│   │   │   │   ├── QuoteForm.tsx
+│   │   │   │   ├── QuoteHeader.tsx
+│   │   │   │   └── QuoteProgress.tsx
+│   │   │   ├── hooks/
+│   │   │   │   ├── useQuote.ts
+│   │   │   │   └── useQuoteState.ts
+│   │   │   ├── services/
+│   │   │   │   └── quoteApi.ts
+│   │   │   ├── types/
+│   │   │   │   └── quote.types.ts
+│   │   │   └── utils/
+│   │   │
+│   │   ├── locations/
+│   │   │   ├── components/
+│   │   │   │   ├── LocationList.tsx
+│   │   │   │   ├── LocationForm.tsx
+│   │   │   │   └── LocationCard.tsx
+│   │   │   ├── hooks/
+│   │   │   │   └── useLocations.ts
+│   │   │   └── services/
+│   │   │       └── locationApi.ts
+│   │   │
+│   │   ├── coverage/
+│   │   │   ├── components/
+│   │   │   │   ├── CoverageOptions.tsx
+│   │   │   │   └── CoverageSelector.tsx
+│   │   │   └── hooks/
+│   │   │
+│   │   └── calculation/
+│   │       ├── components/
+│   │       │   ├── CalculationButton.tsx
+│   │       │   ├── PremiumResults.tsx
+│   │       │   └── LocationBreakdown.tsx
+│   │       └── hooks/
+│   │           └── useCalculation.ts
+│   │
+│   ├── shared/
+│   │   ├── components/            # Atomic Design
+│   │   │   ├── atoms/
+│   │   │   │   ├── Button.tsx
+│   │   │   │   ├── Input.tsx
+│   │   │   │   ├── Select.tsx
+│   │   │   │   └── Alert.tsx
+│   │   │   ├── molecules/
+│   │   │   │   ├── FormField.tsx
+│   │   │   │   └── Card.tsx
+│   │   │   ├── organisms/
+│   │   │   │   ├── Navbar.tsx
+│   │   │   │   └── Sidebar.tsx
+│   │   │   └── templates/
+│   │   │       └── PageLayout.tsx
+│   │   ├── hooks/
+│   │   │   ├── useApi.ts
+│   │   │   └── useForm.ts
+│   │   ├── services/
+│   │   │   ├── apiClient.ts
+│   │   │   └── queryClient.ts
+│   │   ├── types/
+│   │   │   └── common.types.ts
+│   │   └── utils/
+│   │       ├── validators.ts
+│   │       └── formatters.ts
+│   │
+│   ├── layouts/
+│   │   ├── MainLayout.tsx
+│   │   └── QuoteLayout.tsx
+│   │
+│   ├── routes/
+│   │   ├── AppRoutes.tsx
+│   │   └── ProtectedRoute.tsx
+│   │
+│   ├── store/                     # State Management
+│   │   ├── quoteStore.ts
+│   │   └── catalogStore.ts
+│   │
+│   ├── App.tsx
+│   └── main.tsx
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── .env.example
+├── vite.config.ts
+└── package.json
+```
+
+### Diseño de Base de Datos
+
+#### Modelo de Datos Principal
+
+1. **Entidad Principal: cotizaciones_danos**
+
+Es el agregado principal que persiste toda la operación del folio.
+
+- Campos clave: `numeroFolio (PK)`, `estadoCotizacion`, `version`, `fechaUltimaActualizacion`
+- Información General: `datosAsegurado`, `codigoAgente`, `tipoNegocio`, `clasificacionRiesgo`.
+- Configuración: `configuracionLayout`, `opcionesCobertura`.
+- Resultados Financieros: `primaNeta`, `primaComercial`, `metadatos`.
+
+2. **Entidad Dependiente: ubicaciones**
+
+Relación de uno a uno con la cotización (se guarda como un arreglo o tabla vinculada).
+
+- Campos clave: `índice`, `nombreUbicacion`.
+- Geografía: `direccion`, `codigoPostal`, `estado`, `municipio`, `colonia`, `ciudad`.
+- Técnicos: `tipoConstructivo`, `nivel, anioConstruccion`, `giro, claveIncendio`, `zonaCatastrofica`.
+- Estado: `alertasBloqueantes`, `estadoValidacion`.
+- Financieros: `primasPorUbicacion (resultado del cálculo)`.
+
+3. **Colecciones de Referencia (Catálogos y Tarifas)**
+Tablas para la lógica de negocio y cálculo técnico:
+
+- parametros_calculo: `Parámetros globales para conversión de primas`.
+- tarifas_incendio: `Tasas base por giro`.
+- tarifas_cat / tarifa_fhm: `Factores por zona y riesgos hidrometeorológicos`.
+- factores_equipo_electronico: `Factores técnicos por clase/nivel`.
+- catalogo_cp_zonas: `Relación CP con zonas técnicas (TEV/FHM)`.
+
+### 📊 Especificación de APIs
+
+#### Endpoints Obligatorios
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `PUT` | `/v1/quotes/{folio}/general-info` | Guardar datos generales |
+| `GET` | `/v1/quotes/{folio}/locations/layout` | Consultar layout de ubicaciones |
+| `PUT` | `/v1/quotes/{folio}/locations/layout` | Guardar layout de ubicaciones |
+| `GET` | `/v1/quotes/{folio}/locations` | Listar ubicaciones |
+| `PUT` | `/v1/quotes/{folio}/locations` | Crear/actualizar ubicaciones en lote |
+| `PATCH` | `/v1/quotes/{folio}/locations/{indice}` | Editar ubicación específica |
+| `GET` | `/v1/quotes/{folio}/locations/summary` | Resumen de ubicaciones |
+| `GET` | `/v1/quotes/{folio}/state` | Estado de la cotización |
+| `GET` | `/v1/quotes/{folio}/coverage-options` | Opciones de cobertura |
+| `PUT` | `/v1/quotes/{folio}/coverage-options` | Guardar opciones de cobertura |
+| `POST` | `/v1/quotes/{folio}/calculate` | Ejecutar cálculo de prima |
+
+### 🎯 Decision Records (ADRs)
+
+#### ADR-001: Uso de TypeScript en Backend y Frontend
+
+**Contexto**: Necesitamos un lenguaje que garantice type-safety y mejore la mantenibilidad.
+
+**Decisión**: Usar TypeScript en toda la aplicación.
+
+**Consecuencias**:
+
+- ✅ Type-safety en compile-time
+- ✅ Mejor autocompletado y refactoring
+- ✅ Documentación implícita en tipos
+- ❌ Curva de aprendizaje inicial
+
+#### ADR-002: Patrón Modelo-Vista-Controlador (MVC) para Backend
+
+**Contexto**: Necesitamos una estructura que permita un desarrollo ágil, fácil de entender para el equipo y que acelere el tiempo de entrega (Time-to-Market).
+
+**Decisión**: Implementar el patrón MVC, organizando el código en tres componentes principales: Modelos (datos y lógica), Vistas (respuestas JSON/DTO) y Controladores (flujo de peticiones).
+
+**Consecuencias**:
+
+- ✅ Desarrollo rápido
+- ✅ Organización clara
+- ❌ Acoplamiento
+
+#### ADR-003: PostgreSQL como Base de Datos
+
+**Contexto**: Requerimiento del stack técnico.
+
+**Decisión**: Usar PostgreSQL con soporte JSONB para datos semi-estructurados.
+
+**Consecuencias**:
+
+- ✅ Soporte robusto de JSONB
+- ✅ ACID completo
+- ✅ Optimistic locking con versioning
+- ✅ Extensibilidad
+
+#### ADR-004: Gestión de Estado (React Query + Zustand)
+
+**Contexto**: El cotizador requiere manejar datos asíncronos complejos (ubicaciones, cálculos de primas) y, al mismo tiempo, un estado global de la interfaz que persista entre los pasos del flujo (stepper).
+
+
+**Decisión**: Usar Zustand como única fuente de verdad para el estado global, incluyendo tanto la lógica de la interfaz (pasos del stepper, modales) como los datos provenientes del servidor (folios, ubicaciones, cálculos).
+
+
+**Consecuencias**:
+
+- ✅ Arquitectura Simplificada
+- ✅ Control Total
+- ✅ Persistencia Directa
+- ✅ Optimistic updates
+
+

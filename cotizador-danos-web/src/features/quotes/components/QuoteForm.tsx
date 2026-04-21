@@ -50,7 +50,7 @@ export const QuoteForm = ({
     
     if (validationErrors[field]) {
       setValidationErrors(prev => {
-        const { [field]: _removed, ...rest } = prev;
+        const { [field]: _, ...rest } = prev;
         return rest;
       });
     }

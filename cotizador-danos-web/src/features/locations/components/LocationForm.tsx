@@ -67,7 +67,7 @@ export const LocationForm = ({
     setFormData(prev => ({ ...prev, [field]: value }));
     if (validationErrors[field]) {
       setValidationErrors(prev => {
-        const { [field]: _removed, ...rest } = prev;
+        const { [field]: _, ...rest } = prev;
         return rest;
       });
     }

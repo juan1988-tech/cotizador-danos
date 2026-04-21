@@ -18,7 +18,7 @@ export const Button = ({
   const baseStyles = 'font-medium rounded-lg transition-colors';
   
   const variants = {
-    primary: 'bg-primary-600 hover:bg-primary-700 text-white',
+    primary: 'bg-blue-600 hover:bg-primary-700 text-white',
     secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-950',
     danger: 'bg-danger-600 hover:bg-danger-700 text-white'
   };
